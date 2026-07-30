@@ -217,7 +217,8 @@ var AI = {
   busy: false,
   lastBox: null,       // {x,y,r,score,t} พิกัดใน work
   lastRun: 0,
-  hits: 0
+  hits: 0,
+  lastClass: ""
 };
 function setAI(state, txt) {
   AI.state = state;
@@ -284,20 +285,27 @@ async function runAI(now) {
     var best = null;
     for (var i = 0; i < preds.length; i++) {
       var p = preds[i];
-      if (p.class !== "sports ball" && p.class !== "frisbee" && p.class !== "orange" && p.class !== "apple") continue;
       var bw = p.bbox[2] * sx, bh = p.bbox[3] * sy;
       var r = (bw + bh) / 4;
       var rRatio = r / geo.rExp;
-      if (rRatio < 0.35 || rRatio > 2.6) continue;             // ขนาดไม่สมเหตุผล
-      var conf = p.score * (p.class === "sports ball" ? 1 : 0.75);
+      if (rRatio < 0.35 || rRatio > 2.6) continue;              // ขนาดไม่สมเหตุผลกับห่วง
+      var aspect = Math.min(bw, bh) / Math.max(bw, bh);
+      if (aspect < 0.55) continue;                              // ลูกบาสต้องเกือบกลม
+      /* ไม่ล็อกเฉพาะคลาส "sports ball" เพราะโมเดลอาจเรียกลูกบาสเป็นอย่างอื่น
+         (เจอจากการทดสอบจริง) — ให้คลาสที่ตรงได้น้ำหนักเต็ม คลาสอื่นได้น้ำหนักครึ่ง
+         แล้วค่อยไปกรองซ้ำด้วยขนาด ความกลม และตัวจับสีอีกชั้น */
+      var known = (p.class === "sports ball" || p.class === "frisbee" || p.class === "orange" || p.class === "apple");
+      var conf = p.score * (known ? 1 : 0.55);
+      if (conf < 0.16) continue;
       if (!best || conf > best.score) {
         best = {
           x: roi.x0 + (p.bbox[0] + p.bbox[2] / 2) * sx,
           y: roi.y0 + (p.bbox[1] + p.bbox[3] / 2) * sy,
-          r: r, rRatio: rRatio, score: conf, t: now
+          r: r, rRatio: rRatio, score: conf, cls: p.class, t: now
         };
       }
     }
+    AI.lastClass = best ? best.cls : (preds.length ? preds[0].class : "—");
     if (best) {
       AI.lastBox = best; AI.hits++;
       learnBallColor(best);                                    // ให้ตัวจับสีเรียนสีลูกจาก AI
@@ -772,7 +780,8 @@ function loop() {
   el("live").textContent =
     (running ? "● จับอยู่" : "○ หยุด") + "  " + fps + "fps  " +
     (AI.state === "ready" ? "AI ✓" : AI.state === "loading" ? "AI …" : "AI ✕") + "\n" +
-    (found ? "เจอลูก [" + found.src + "] ขนาด " + Math.round(found.rRatio * 100) + "%" : "ไม่เจอลูก · จุดตรงสี " + matched);
+    (found ? "เจอลูก [" + found.src + "] ขนาด " + Math.round(found.rRatio * 100) + "%" : "ไม่เจอลูก · จุดตรงสี " + matched) +
+    (AI.state === "ready" ? "\nAI เห็นเป็น: " + (AI.lastClass || "—") : "");
 }
 
 /* ---------- วาดทับภาพ ---------- */
