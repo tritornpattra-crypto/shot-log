@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shot % — จับเปอร์เซ็นต์ชู้ต</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#17211C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Shot %">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12181B; --card:#1B2327; --ink:#F2F5F3; --soft:#93A29A;
+    --rule:#2C3A40; --make:#2FBF71; --miss:#E4572E; --hot:#F5B841;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;overscroll-behavior-y:none}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:"IBM Plex Sans Thai",system-ui,sans-serif;font-size:15px;line-height:1.5;
+    padding:calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 12px);
+  }
+  .wrap{max-width:560px;margin:0 auto}
+  h1{font-family:"Bai Jamjuree",sans-serif;font-weight:700;font-size:24px;margin:0 0 2px}
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--soft);margin:0 0 4px}
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:12px;margin-bottom:10px}
+  h2{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);margin:0 0 8px;font-weight:500}
+
+  /* ---- ตัวเลขหลัก ---- */
+  .score{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin-bottom:10px}
+  .score>div{background:var(--card);padding:10px}
+  .score .k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
+  .score .v{font-family:"Bai Jamjuree",sans-serif;font-weight:700;font-size:32px;line-height:1.05;font-variant-numeric:tabular-nums}
+  .score .s{font-size:11px;color:var(--soft)}
+
+  /* ---- กล้อง ---- */
+  .stage{position:relative;background:#000;border-radius:8px;overflow:hidden}
+  video{width:100%;display:block}
+  canvas.ov{position:absolute;inset:0;width:100%;height:100%}
+  .tapmode{position:absolute;left:8px;right:8px;bottom:8px;background:rgba(18,24,27,.86);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--ink)}
+  .live{position:absolute;top:8px;left:8px;font-family:"IBM Plex Mono",monospace;font-size:11px;background:rgba(18,24,27,.8);padding:4px 7px;border-radius:4px;color:var(--soft)}
+
+  button{font-family:inherit;font-size:14px;cursor:pointer;border-radius:6px;border:1px solid var(--rule);background:#232D32;color:var(--ink);padding:10px 12px}
+  button:disabled{opacity:.4}
+  button:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+  button.pri{background:var(--hot);color:#12181B;border-color:var(--hot);font-weight:600}
+  button.on{background:var(--make);border-color:var(--make);color:#0B1A12;font-weight:600}
+  .row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .row button{flex:1}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .shoot{font-family:"Bai Jamjuree",sans-serif;font-weight:700;font-size:17px;padding:16px;border:none;color:#0B1A12}
+  .shoot.in{background:var(--make)} .shoot.out{background:var(--miss);color:#fff}
+
+  label.sl{display:block;margin-top:10px;font-size:13px;color:var(--soft)}
+  label.sl b{color:var(--ink);font-family:"IBM Plex Mono",monospace}
+  input[type=range]{width:100%;accent-color:var(--hot);margin:2px 0 0}
+
+  /* ---- รายการลูกยิง ---- */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+  .chip{font-family:"IBM Plex Mono",monospace;font-size:12px;padding:6px 9px;border-radius:5px;border:1px solid var(--rule);cursor:pointer}
+  .chip.m{background:rgba(47,191,113,.16);border-color:var(--make);color:var(--make)}
+  .chip.x{background:rgba(228,87,46,.14);border-color:var(--miss);color:var(--miss)}
+  .chip.auto::after{content:" •";color:var(--hot)}
+  .note{font-size:12px;color:var(--soft);margin:8px 0 0}
+  .warn{border-left:3px solid var(--hot);padding-left:9px;font-size:12.5px;color:var(--soft);margin-top:8px}
+  .empty{color:var(--soft);font-size:12.5px}
+  .hist{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--rule);font-size:13px}
+  .hist:last-child{border-bottom:none}
+  .hist .n{font-family:"IBM Plex Mono",monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Shot % · auto + confirm</p>
+  <h1>จับเปอร์เซ็นต์ชู้ต</h1>
+
+  <div class="score">
+    <div><div class="k">เปอร์เซ็นต์</div><div class="v" id="pct">—</div><div class="s" id="tally">ยังไม่มีลูกยิง</div></div>
+    <div><div class="k">สตรีค</div><div class="v" id="streak">0</div><div class="s" id="best">ดีสุด 0</div></div>
+    <div><div class="k">10 ล่าสุด</div><div class="v" id="l10">—</div><div class="s">ฟอร์มตอนนี้</div></div>
+  </div>
+
+  <div class="card">
+    <div class="stage">
+      <video id="cam" playsinline muted></video>
+      <canvas class="ov" id="ov"></canvas>
+      <div class="live" id="live">ปิดกล้อง</div>
+      <div class="tapmode" id="tapmode">กดเปิดกล้องเพื่อเริ่มตั้งค่า</div>
+    </div>
+
+    <div class="row">
+      <button class="pri" id="bCam">เปิดกล้อง</button>
+      <button id="bBall" disabled>1 · แตะลูกบอล</button>
+      <button id="bHoop" disabled>2 · แตะห่วง</button>
+    </div>
+    <div class="row">
+      <button id="bRun" disabled>3 · เริ่มจับอัตโนมัติ</button>
+      <button id="bTune" disabled>ตั้งค่าละเอียด</button>
+    </div>
+
+    <div id="tune" style="display:none">
+      <label class="sl">ความกว้างกรอบห่วง <b id="vW"></b>
+        <input type="range" id="sW" min="4" max="26" step="1"></label>
+      <label class="sl">ความสูงโซนใต้ห่วง <b id="vH"></b>
+        <input type="range" id="sH" min="4" max="30" step="1"></label>
+      <label class="sl">ความไวการจับสีลูกบอล <b id="vT"></b>
+        <input type="range" id="sT" min="40" max="160" step="5"></label>
+      <label class="sl">จำนวนจุดขั้นต่ำที่ถือว่าเจอลูก <b id="vM"></b>
+        <input type="range" id="sM" min="3" max="60" step="1"></label>
+      <p class="note">ถ้าตัวเลข “จุดที่ตรงสี” ในมุมจอวิ่งขึ้นตอนลูกเข้ากรอบ แต่เป็น 0 ตอนไม่มีลูก คือตั้งค่าพอดีแล้ว</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>ยืนยันผลรายลูก — แตะชิปเพื่อสลับ เข้า/พลาด</h2>
+    <div class="chips" id="chips"><span class="empty">จุดสีเหลืองข้างชิปคือลูกที่กล้องตัดสินให้เอง</span></div>
+    <div class="pair">
+      <button class="shoot in" id="bIn">+ เข้า</button>
+      <button class="shoot out" id="bOut">+ พลาด</button>
+    </div>
+    <div class="row">
+      <button id="bUndo">ลบลูกล่าสุด</button>
+      <button id="bSave">จบเซสชัน</button>
+      <button id="bClear">ล้าง</button>
+    </div>
+    <p class="note">ปุ่มมือใช้ได้ตลอด แม้ระบบอัตโนมัติกำลังทำงาน — ตัวเลขจึงไม่เคยแย่กว่าการนับมือ</p>
+  </div>
+
+  <div class="card">
+    <h2>ประวัติเซสชัน</h2>
+    <div id="hist"><p class="empty">ยังไม่มีเซสชันที่บันทึกไว้</p></div>
+  </div>
+</div>
+
+<canvas id="work" width="200" height="150" style="display:none"></canvas>
+
+<script>
+const el=id=>document.getElementById(id);
+const KEY="shotpct:sessions";
+const video=el("cam"), ov=el("ov"), work=el("work"), wctx=work.getContext("2d",{willReadFrequently:true});
+const octx=ov.getContext("2d");
+
+/* ---------- สถานะ ---------- */
+let stream=null, running=false, tapMode=null;
+let ball=null;                       // {r,g,b}
+let hoop=null;                       // {x,y} สัดส่วน 0-1
+let cfg={w:12,h:14,tol:95,minPix:12};// w,h เป็นเปอร์เซ็นต์ของความกว้าง/สูงภาพ
+let shots=[];                        // {made, auto}
+let track=[];                        // ประวัติตำแหน่งลูก
+let state={nearRim:false, tRim:0, lastShot:0};
+let matched=0;
+
+/* ---------- กล้อง ---------- */
+el("bCam").onclick=async()=>{
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280}},audio:false});
+    video.srcObject=stream; await video.play();
+    ov.width=video.videoWidth||640; ov.height=video.videoHeight||480;
+    el("bBall").disabled=el("bHoop").disabled=el("bTune").disabled=false;
+    el("bCam").textContent="กล้องเปิดแล้ว";
+    say("ขั้นที่ 1 · กดปุ่ม “แตะลูกบอล” แล้วแตะที่ลูกบอลในภาพ เพื่อให้แอปจำสีลูก");
+    el("live").textContent="พร้อมตั้งค่า";
+    loop();
+  }catch(err){
+    say("เปิดกล้องไม่ได้ ("+err.name+") — กล้องทำงานได้เฉพาะเมื่อเปิดหน้านี้ผ่าน https หรือ localhost");
+  }
+};
+function say(t){ el("tapmode").textContent=t; }
+
+/* ---------- โหมดแตะ ---------- */
+el("bBall").onclick=()=>{ tapMode="ball"; say("แตะที่ลูกบอลในภาพ (แตะกลางลูก ให้แสงปกติ ไม่ใช่ส่วนที่เป็นเงา)"); };
+el("bHoop").onclick=()=>{ tapMode="hoop"; say("แตะที่กลางห่วงในภาพ"); };
+
+ov.addEventListener("pointerdown",e=>{
+  if(!tapMode||!video.videoWidth) return;
+  const r=ov.getBoundingClientRect();
+  const nx=(e.clientX-r.left)/r.width, ny=(e.clientY-r.top)/r.height;
+  if(tapMode==="ball"){
+    wctx.drawImage(video,0,0,work.width,work.height);
+    const px=Math.round(nx*work.width), py=Math.round(ny*work.height);
+    let R=0,G=0,B=0,n=0;
+    const d=wctx.getImageData(Math.max(0,px-3),Math.max(0,py-3),7,7).data;
+    for(let i=0;i<d.length;i+=4){R+=d[i];G+=d[i+1];B+=d[i+2];n++;}
+    ball={r:R/n,g:G/n,b:B/n};
+    say("จำสีลูกแล้ว · ขั้นที่ 2 · กด “แตะห่วง” แล้วแตะกลางห่วง");
+  }else{
+    hoop={x:nx,y:ny};
+    say("ตั้งห่วงแล้ว · ขั้นที่ 3 · กด “เริ่มจับอัตโนมัติ” แล้วยิงได้เลย");
+  }
+  tapMode=null;
+  el("bRun").disabled=!(ball&&hoop);
+  syncTune();
+});
+
+/* ---------- ตั้งค่าละเอียด ---------- */
+el("bTune").onclick=()=>{ const t=el("tune"); t.style.display=t.style.display==="none"?"block":"none"; };
+function syncTune(){
+  el("sW").value=cfg.w; el("vW").textContent=cfg.w+"%";
+  el("sH").value=cfg.h; el("vH").textContent=cfg.h+"%";
+  el("sT").value=cfg.tol; el("vT").textContent=cfg.tol;
+  el("sM").value=cfg.minPix; el("vM").textContent=cfg.minPix+" จุด";
+}
+["W","H","T","M"].forEach(k=>{
+  el("s"+k).oninput=e=>{
+    const v=+e.target.value;
+    if(k==="W")cfg.w=v; if(k==="H")cfg.h=v; if(k==="T")cfg.tol=v; if(k==="M")cfg.minPix=v;
+    syncTune();
+  };
+});
+syncTune();
+
+/* ---------- เริ่ม/หยุดจับ ---------- */
+let wake=null;
+async function keepAwake(on){
+  try{
+    if(on && "wakeLock" in navigator && !wake){ wake=await navigator.wakeLock.request("screen"); wake.onrelease=()=>{wake=null;}; }
+    else if(!on && wake){ await wake.release(); wake=null; }
+  }catch(e){ /* เครื่องที่ไม่รองรับก็ข้ามไป */ }
+}
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&running) keepAwake(true); });
+
+el("bRun").onclick=()=>{
+  running=!running;
+  keepAwake(running);
+  el("bRun").textContent=running?"หยุดจับอัตโนมัติ":"3 · เริ่มจับอัตโนมัติ";
+  el("bRun").classList.toggle("on",running);
+  say(running
+    ? "กำลังจับ · จอจะไม่ดับเอง · ลูกที่ระบบตัดสินเองมีจุดเหลือง ถ้าผิดแตะชิปนั้นเพื่อสลับ"
+    : "หยุดจับแล้ว ใช้ปุ่มมือได้ตามปกติ");
+  track=[]; state={nearRim:false,tRim:0,lastShot:0};
+};
+
+/* ---------- ลูปวิเคราะห์ภาพ ---------- */
+let lastT=0;
+function loop(){
+  requestAnimationFrame(loop);
+  if(!video.videoWidth) return;
+  const now=performance.now();
+  if(now-lastT<45) return;   // ~22 เฟรม/วินาที
+  lastT=now;
+
+  const W=work.width, H=work.height;
+  wctx.drawImage(video,0,0,W,H);
+
+  let found=null;
+  if(ball&&hoop){
+    // จำกัดพื้นที่วิเคราะห์รอบห่วง เพื่อกันเสื้อผ้าหรือพื้นสีใกล้เคียงมารบกวน
+    const cx=hoop.x*W, cy=hoop.y*H;
+    const rw=cfg.w/100*W, bh=cfg.h/100*H;
+    const x0=Math.max(0,Math.round(cx-rw*2)), x1=Math.min(W,Math.round(cx+rw*2));
+    const y0=Math.max(0,Math.round(cy-bh*2.2)), y1=Math.min(H,Math.round(cy+bh*1.6));
+    const d=wctx.getImageData(x0,y0,x1-x0,y1-y0).data;
+    let sx=0,sy=0,n=0;
+    const tol2=cfg.tol*cfg.tol;
+    for(let y=y0;y<y1;y++){
+      for(let x=x0;x<x1;x++){
+        const i=(((y-y0)*(x1-x0))+(x-x0))*4;
+        const dr=d[i]-ball.r, dg=d[i+1]-ball.g, db=d[i+2]-ball.b;
+        if(dr*dr+dg*dg+db*db<tol2 && d[i]+d[i+1]+d[i+2]>110){ sx+=x; sy+=y; n++; }
+      }
+    }
+    matched=n;
+    if(n>=cfg.minPix) found={x:sx/n/W, y:sy/n/H, n};
+  }
+
+  if(running&&ball&&hoop) judge(found,now);
+  drawOverlay(found);
+  el("live").textContent=(running?"จับอยู่ · ":"")+"จุดที่ตรงสี "+matched;
+}
+
+/* ---------- ตัดสินเข้า/พลาด ---------- */
+function judge(f,now){
+  const rw=cfg.w/100, bh=cfg.h/100;
+  const rimTop=hoop.y-rw*0.35, rimBot=hoop.y+rw*0.35;
+
+  if(f){
+    track.push({x:f.x,y:f.y,t:now});
+    if(track.length>16) track.shift();
+    const inRimX=Math.abs(f.x-hoop.x)<=rw;
+    // ลูกอยู่ในกรอบห่วง
+    if(inRimX && f.y>=rimTop && f.y<=rimBot){ state.nearRim=true; state.tRim=now; }
+    // ลูกลงมาถึงโซนใต้ห่วงในแนวดิ่งและยังอยู่ในความกว้างห่วง
+    if(state.nearRim && f.y>rimBot && f.y<=rimBot+bh && Math.abs(f.x-hoop.x)<=rw*0.85){
+      const prev=track[track.length-2];
+      if(prev && f.y>prev.y && now-state.lastShot>1100){ add(true,true); }
+    }
+    // ลูกเด้งขึ้นหรือออกข้างหลังแตะห่วง = พลาด
+    if(state.nearRim && (f.y<rimTop-bh*0.6 || Math.abs(f.x-hoop.x)>rw*1.8) && now-state.lastShot>1100){
+      add(false,true);
+    }
+  }
+  // แตะห่วงแล้วหายไปจากพื้นที่วิเคราะห์ = ถือว่าพลาด
+  if(state.nearRim && now-state.tRim>950 && now-state.lastShot>1100){ add(false,true); }
+}
+function add(made,auto){
+  shots.push({made,auto:!!auto});
+  state.nearRim=false; state.lastShot=performance.now(); track=[];
+  if(navigator.vibrate) navigator.vibrate(made?[20,40,20]:12);
+  render();
+}
+
+/* ---------- วาดกรอบทับภาพ ---------- */
+function drawOverlay(f){
+  const W=ov.width,H=ov.height;
+  octx.clearRect(0,0,W,H);
+  if(!hoop) return;
+  const cx=hoop.x*W, cy=hoop.y*H, rw=cfg.w/100*W, bh=cfg.h/100*H;
+  octx.lineWidth=Math.max(2,W/320);
+  octx.strokeStyle="#F5B841";
+  octx.strokeRect(cx-rw,cy-rw*0.35,rw*2,rw*0.7);
+  octx.setLineDash([8,6]); octx.strokeStyle="#2FBF71";
+  octx.strokeRect(cx-rw*0.85,cy+rw*0.35,rw*1.7,bh);
+  octx.setLineDash([]);
+  if(f){
+    octx.fillStyle="#F5B841";
+    octx.beginPath(); octx.arc(f.x*W,f.y*H,Math.max(5,W/90),0,7); octx.fill();
+  }
+}
+
+/* ---------- ปุ่มมือ + สรุป ---------- */
+el("bIn").onclick=()=>add(true,false);
+el("bOut").onclick=()=>add(false,false);
+el("bUndo").onclick=()=>{shots.pop();render();};
+el("bClear").onclick=()=>{ if(!shots.length||confirm("ล้างเซสชันนี้?")){shots=[];render();} };
+
+function render(){
+  const n=shots.length, m=shots.filter(s=>s.made).length;
+  el("pct").textContent=n?Math.round(m/n*100)+"%":"—";
+  el("tally").textContent=n?m+" เข้า จาก "+n+" ลูก":"ยังไม่มีลูกยิง";
+  let c=0,b=0; shots.forEach(s=>{c=s.made?c+1:0;b=Math.max(b,c);});
+  el("streak").textContent=c; el("best").textContent="ดีสุด "+b;
+  const t=shots.slice(-10);
+  el("l10").textContent=t.length?Math.round(t.filter(s=>s.made).length/t.length*100)+"%":"—";
+
+  el("chips").innerHTML = n
+    ? shots.map((s,i)=>`<button class="chip ${s.made?"m":"x"} ${s.auto?"auto":""}" data-i="${i}">${i+1} ${s.made?"เข้า":"พลาด"}</button>`).join("")
+    : `<span class="empty">จุดสีเหลืองข้างชิปคือลูกที่กล้องตัดสินให้เอง</span>`;
+  el("chips").querySelectorAll(".chip").forEach(cb=>{
+    cb.onclick=()=>{ const i=+cb.dataset.i; shots[i].made=!shots[i].made; shots[i].auto=false; render(); };
+  });
+}
+
+/* ---------- ประวัติ ---------- */
+const readAll=()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return[]}};
+el("bSave").onclick=()=>{
+  if(!shots.length) return;
+  const m=shots.filter(s=>s.made).length;
+  const a=readAll();
+  a.push({at:new Date().toISOString(),n:shots.length,made:m,pct:Math.round(m/shots.length*100),
+          autoFixed:shots.filter(s=>!s.auto).length});
+  try{localStorage.setItem(KEY,JSON.stringify(a));}catch(e){}
+  shots=[]; render(); renderHist();
+};
+function renderHist(){
+  const a=readAll().slice(-12).reverse();
+  el("hist").innerHTML=a.length? a.map(s=>{
+    const d=new Date(s.at);
+    return `<div class="hist"><span>${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}</span>
+    <span class="n">${s.made}/${s.n} · ${s.pct}%</span></div>`;
+  }).join("") : `<p class="empty">ยังไม่มีเซสชันที่บันทึกไว้</p>`;
+}
+
+if("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+render(); renderHist();
+</script>
+</body>
+</html>

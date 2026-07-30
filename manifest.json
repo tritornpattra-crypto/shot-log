@@ -1,0 +1,16 @@
+{
+  "name": "Shot Log — ตัวจับเปอร์เซ็นต์ชู้ต",
+  "short_name": "Shot Log",
+  "description": "บันทึกการยิงบาสรายลูก ดูเปอร์เซ็นต์แยกโซน และอัดคลิปดูฟอร์ม",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#E4E7E1",
+  "theme_color": "#17211C",
+  "lang": "th",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
