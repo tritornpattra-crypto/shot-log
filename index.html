@@ -31,52 +31,63 @@
   .card{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:12px;margin-bottom:10px}
   h2{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);margin:0 0 8px;font-weight:500}
 
-  /* ---- ตัวเลขหลัก ---- */
   .score{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin-bottom:10px}
   .score>div{background:var(--card);padding:10px}
   .score .k{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
   .score .v{font-family:"Bai Jamjuree",sans-serif;font-weight:700;font-size:32px;line-height:1.05;font-variant-numeric:tabular-nums}
   .score .s{font-size:11px;color:var(--soft)}
 
-  /* ---- กล้อง ---- */
-  .stage{position:relative;background:#000;border-radius:8px;overflow:hidden}
+  .stage{position:relative;background:#000;border-radius:8px;overflow:hidden;touch-action:none}
   video{width:100%;display:block}
-  canvas.ov{position:absolute;inset:0;width:100%;height:100%}
-  .tapmode{position:absolute;left:8px;right:8px;bottom:8px;background:rgba(18,24,27,.86);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--ink)}
-  .live{position:absolute;top:8px;left:8px;font-family:"IBM Plex Mono",monospace;font-size:11px;background:rgba(18,24,27,.8);padding:4px 7px;border-radius:4px;color:var(--soft)}
+  canvas.ov{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+  .tapmode{position:absolute;left:8px;right:8px;bottom:8px;background:rgba(18,24,27,.88);border:1px solid var(--rule);border-radius:6px;padding:8px 10px;font-size:13px}
+  .live{position:absolute;top:8px;left:8px;font-family:"IBM Plex Mono",monospace;font-size:10px;background:rgba(18,24,27,.82);padding:5px 7px;border-radius:4px;color:var(--soft);white-space:pre;line-height:1.45}
 
   button{font-family:inherit;font-size:14px;cursor:pointer;border-radius:6px;border:1px solid var(--rule);background:#232D32;color:var(--ink);padding:10px 12px}
   button:disabled{opacity:.4}
   button:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
   button.pri{background:var(--hot);color:#12181B;border-color:var(--hot);font-weight:600}
   button.on{background:var(--make);border-color:var(--make);color:#0B1A12;font-weight:600}
+  button.done{border-color:var(--make);color:var(--make)}
   .row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
   .row button{flex:1}
   .pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
   .shoot{font-family:"Bai Jamjuree",sans-serif;font-weight:700;font-size:17px;padding:16px;border:none;color:#0B1A12}
   .shoot.in{background:var(--make)} .shoot.out{background:var(--miss);color:#fff}
+  .steps{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
+
+  .aibar{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;border:1px solid var(--rule);border-radius:6px;font-size:12px;color:var(--soft)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--soft);flex:none}
+  .dot.ok{background:var(--make)} .dot.load{background:var(--hot)} .dot.err{background:var(--miss)}
+  .hint{font-size:12px;color:var(--soft);margin:8px 0 0}
+  .hint b{color:var(--hot)}
 
   label.sl{display:block;margin-top:10px;font-size:13px;color:var(--soft)}
   label.sl b{color:var(--ink);font-family:"IBM Plex Mono",monospace}
-  input[type=range]{width:100%;accent-color:var(--hot);margin:2px 0 0}
+  input[type=range]{width:100%;accent-color:var(--hot)}
 
-  /* ---- รายการลูกยิง ---- */
-  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-  .chip{font-family:"IBM Plex Mono",monospace;font-size:12px;padding:6px 9px;border-radius:5px;border:1px solid var(--rule);cursor:pointer}
-  .chip.m{background:rgba(47,191,113,.16);border-color:var(--make);color:var(--make)}
-  .chip.x{background:rgba(228,87,46,.14);border-color:var(--miss);color:var(--miss)}
-  .chip.auto::after{content:" •";color:var(--hot)}
-  .note{font-size:12px;color:var(--soft);margin:8px 0 0}
-  .warn{border-left:3px solid var(--hot);padding-left:9px;font-size:12.5px;color:var(--soft);margin-top:8px}
-  .empty{color:var(--soft);font-size:12.5px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-family:"IBM Plex Mono",monospace;font-size:11px;padding:5px 8px;border-radius:4px;border:1px solid var(--rule)}
+  .chip.m{background:rgba(47,191,113,.16);border-color:rgba(47,191,113,.5);color:#8FE3B6}
+  .chip.x{background:rgba(228,87,46,.14);border-color:rgba(228,87,46,.45);color:#F0A288}
+  .chip.auto::after{content:"•";color:var(--hot);margin-left:5px}
+  .empty{font-size:12px;color:var(--soft)}
   .hist{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--rule);font-size:13px}
   .hist:last-child{border-bottom:none}
-  .hist .n{font-family:"IBM Plex Mono",monospace}
+  .hist .n{font-family:"IBM Plex Mono",monospace;color:var(--soft)}
+
+  .modal{position:fixed;inset:0;background:rgba(6,10,11,.92);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+  .modal.show{display:flex}
+  .sheet{background:var(--card);border:1px solid var(--rule);border-radius:10px;max-width:420px;width:100%;padding:14px}
+  .sheet h3{font-family:"Bai Jamjuree",sans-serif;font-size:18px;margin:0 0 2px}
+  .sheet p{margin:0 0 10px;font-size:13px;color:var(--soft)}
+  #clip{width:100%;border-radius:6px;background:#000;display:block}
+  .conf{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--soft);margin-top:6px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <p class="eyebrow">Shot % · auto + confirm</p>
+  <p class="eyebrow">Shot % · AI + geometry + confirm</p>
   <h1>จับเปอร์เซ็นต์ชู้ต</h1>
 
   <div class="score">
@@ -87,38 +98,46 @@
 
   <div class="card">
     <div class="stage">
-      <video id="cam" playsinline muted></video>
-      <canvas class="ov" id="ov"></canvas>
+      <video id="v" playsinline muted></video>
+      <canvas id="ov" class="ov"></canvas>
       <div class="live" id="live">ปิดกล้อง</div>
       <div class="tapmode" id="tapmode">กดเปิดกล้องเพื่อเริ่มตั้งค่า</div>
     </div>
 
-    <div class="row">
-      <button class="pri" id="bCam">เปิดกล้อง</button>
-      <button id="bBall" disabled>1 · แตะลูกบอล</button>
-      <button id="bHoop" disabled>2 · แตะห่วง</button>
-    </div>
-    <div class="row">
-      <button id="bRun" disabled>3 · เริ่มจับอัตโนมัติ</button>
-      <button id="bTune" disabled>ตั้งค่าละเอียด</button>
+    <div class="row"><button id="bCam" class="pri">เปิดกล้อง</button></div>
+
+    <div class="aibar">
+      <span class="dot" id="aiDot"></span>
+      <span id="aiTxt">AI ตรวจจับลูกบอล — ยังไม่โหลด</span>
+      <button id="bAI" style="margin-left:auto;padding:6px 10px;font-size:12px">โหลด AI</button>
     </div>
 
-    <div id="tune" style="display:none">
-      <label class="sl">ความกว้างกรอบห่วง <b id="vW"></b>
-        <input type="range" id="sW" min="4" max="26" step="1"></label>
-      <label class="sl">ความสูงโซนใต้ห่วง <b id="vH"></b>
-        <input type="range" id="sH" min="4" max="30" step="1"></label>
-      <label class="sl">ความไวการจับสีลูกบอล <b id="vT"></b>
-        <input type="range" id="sT" min="40" max="160" step="5"></label>
-      <label class="sl">จำนวนจุดขั้นต่ำที่ถือว่าเจอลูก <b id="vM"></b>
-        <input type="range" id="sM" min="3" max="60" step="1"></label>
-      <p class="note">ถ้าตัวเลข “จุดที่ตรงสี” ในมุมจอวิ่งขึ้นตอนลูกเข้ากรอบ แต่เป็น 0 ตอนไม่มีลูก คือตั้งค่าพอดีแล้ว</p>
+    <div class="steps">
+      <button id="bL" disabled>1 · ขอบห่วงซ้าย</button>
+      <button id="bR" disabled>2 · ขอบห่วงขวา</button>
+      <button id="bF" disabled>3 · ขอบห่วงใกล้ตัว</button>
+      <button id="bBall" disabled>4 · แตะลูก (ถ้าไม่ใช้ AI)</button>
+    </div>
+    <div class="row">
+      <button id="bRun" disabled>5 · เริ่มจับอัตโนมัติ</button>
+      <button id="bTune">ตั้งค่าละเอียด</button>
+    </div>
+
+    <p class="hint">วางมือถือ <b>หลังคนยิง หันเข้าห่วง</b> บนขาตั้งหรือที่นิ่งๆ ให้เห็นห่วงเต็มในกรอบ · หลังตั้งห่วงแล้ว <b>ลากจุดสีเหลือง</b> เพื่อปรับให้วงรีทับห่วงพอดี</p>
+
+    <div id="tune" style="display:none;margin-top:10px;border-top:1px solid var(--rule);padding-top:10px">
+      <label class="sl">ความมั่นใจขั้นต่ำที่นับเอง — <b><span id="vK"></span></b><input type="range" id="sK" min="50" max="95" step="1"></label>
+      <label class="sl">ยอมให้ขนาดลูกเพี้ยนได้ — <b><span id="vR"></span></b><input type="range" id="sR" min="15" max="70" step="1"></label>
+      <label class="sl">ความไวสี (ตัวจับสำรอง) — <b><span id="vC"></span></b><input type="range" id="sC" min="20" max="120" step="1"></label>
+      <label class="sl">ความไวการเคลื่อนไหว — <b><span id="vM"></span></b><input type="range" id="sM" min="6" max="50" step="1"></label>
+      <div class="row"><button id="bNet">ห่วงนี้: มีตาข่าย</button></div>
+      <p class="hint" style="margin-top:6px">ถ้าห่วงมีตาข่าย ระบบจะใช้ “ตาข่ายบังลูก” เป็นหลักฐานสำคัญว่าลูกลงจริง — ถ้าห่วงที่คุณซ้อมไม่มีตาข่ายหรือเป็นโซ่ ให้กดสลับเป็น “ไม่มีตาข่าย” ไม่งั้นระบบจะถามบ่อยเกินจำเป็น</p>
+      <div class="row"><button id="bReset">ล้างค่าห่วง/ลูก</button></div>
     </div>
   </div>
 
   <div class="card">
     <h2>ยืนยันผลรายลูก — แตะชิปเพื่อสลับ เข้า/พลาด</h2>
-    <div class="chips" id="chips"><span class="empty">จุดสีเหลืองข้างชิปคือลูกที่กล้องตัดสินให้เอง</span></div>
     <div class="pair">
       <button class="shoot in" id="bIn">+ เข้า</button>
       <button class="shoot out" id="bOut">+ พลาด</button>
@@ -128,244 +147,735 @@
       <button id="bSave">จบเซสชัน</button>
       <button id="bClear">ล้าง</button>
     </div>
-    <p class="note">ปุ่มมือใช้ได้ตลอด แม้ระบบอัตโนมัติกำลังทำงาน — ตัวเลขจึงไม่เคยแย่กว่าการนับมือ</p>
+    <div class="chips" id="chips" style="margin-top:10px"></div>
   </div>
 
   <div class="card">
     <h2>ประวัติเซสชัน</h2>
-    <div id="hist"><p class="empty">ยังไม่มีเซสชันที่บันทึกไว้</p></div>
+    <div id="hist"></div>
   </div>
 </div>
 
-<canvas id="work" width="200" height="150" style="display:none"></canvas>
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h3>ลูกนี้เข้าไหม?</h3>
+    <p id="mWhy"></p>
+    <canvas id="clip"></canvas>
+    <div class="conf" id="mConf"></div>
+    <div class="pair">
+      <button class="shoot in" id="mIn">เข้า</button>
+      <button class="shoot out" id="mOut">พลาด</button>
+    </div>
+    <div class="row"><button id="mSkip">ไม่นับลูกนี้</button></div>
+  </div>
+</div>
 
 <script>
-const el=id=>document.getElementById(id);
-const KEY="shotpct:sessions";
-const video=el("cam"), ov=el("ov"), work=el("work"), wctx=work.getContext("2d",{willReadFrequently:true});
-const octx=ov.getContext("2d");
+"use strict";
+var el = function (id) { return document.getElementById(id); };
+var KEY = "shotlog.sessions.v1", CFGKEY = "shotlog.cfg.v3", RIMKEY = "shotlog.rim.v3";
 
-/* ---------- สถานะ ---------- */
-let stream=null, running=false, tapMode=null;
-let ball=null;                       // {r,g,b}
-let hoop=null;                       // {x,y} สัดส่วน 0-1
-let cfg={w:12,h:14,tol:95,minPix:12};// w,h เป็นเปอร์เซ็นต์ของความกว้าง/สูงภาพ
-let shots=[];                        // {made, auto}
-let track=[];                        // ประวัติตำแหน่งลูก
-let state={nearRim:false, tRim:0, lastShot:0};
-let matched=0;
+var video = el("v"), ov = el("ov"), octx = ov.getContext("2d");
+var work = document.createElement("canvas");
+var wctx = work.getContext("2d", { willReadFrequently: true });
+var crop = document.createElement("canvas");           // ภาพครอบรอบห่วงสำหรับป้อน AI
+var cropCtx = crop.getContext("2d", { willReadFrequently: true });
 
-/* ---------- กล้อง ---------- */
-el("bCam").onclick=async()=>{
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280}},audio:false});
-    video.srcObject=stream; await video.play();
-    ov.width=video.videoWidth||640; ov.height=video.videoHeight||480;
-    el("bBall").disabled=el("bHoop").disabled=el("bTune").disabled=false;
-    el("bCam").textContent="กล้องเปิดแล้ว";
-    say("ขั้นที่ 1 · กดปุ่ม “แตะลูกบอล” แล้วแตะที่ลูกบอลในภาพ เพื่อให้แอปจำสีลูก");
-    el("live").textContent="พร้อมตั้งค่า";
-    loop();
-  }catch(err){
-    say("เปิดกล้องไม่ได้ ("+err.name+") — กล้องทำงานได้เฉพาะเมื่อเปิดหน้านี้ผ่าน https หรือ localhost");
-  }
+/* ห่วงมาตรฐาน = เส้นผ่านศูนย์กลาง 45 ซม. · ลูกบาสเบอร์ 7 = 24 ซม.
+   ถ้าห่วงกว้าง 2a พิกเซล → มาตราส่วน = 2a/45 พิกเซลต่อ ซม.
+   รัศมีลูกที่ความลึกเดียวกับห่วง = 12 ซม. × 2a/45 = a × 24/45          */
+var BALL_OVER_RIM = 24 / 45;                 // = 0.5333 (รัศมีลูก ÷ รัศมีห่วง)
+
+var WW = 384, WH = 288;
+var stream = null, running = false, tapMode = null, dragging = null;
+var rim = null, geo = null, ballRef = null;
+var prevGray = null, matched = 0;
+var track = [], phase = "idle", armed = null, lastEvent = 0;
+var shots = [], fps = 0, modalOpen = false;
+
+var cfg = { colTol: 55, motion: 18, minConf: 80, rTol: 34, net: 1 };
+try { var _c = JSON.parse(localStorage.getItem(CFGKEY) || "{}"); for (var k in _c) cfg[k] = _c[k]; } catch (e) {}
+
+/* ---------- คลิปย้อนหลัง ---------- */
+var CLIP_W = 176, CLIP_N = 38;
+var clipCv = document.createElement("canvas");
+var clipCtx = clipCv.getContext("2d", { willReadFrequently: true });
+var clipBuf = [];
+
+function say(t) { el("tapmode").textContent = t; }
+function saveCfg() { try { localStorage.setItem(CFGKEY, JSON.stringify(cfg)); } catch (e) {} }
+function saveRim() { try { localStorage.setItem(RIMKEY, JSON.stringify({ rim: rim, ballRef: ballRef })); } catch (e) {} }
+
+/* =========================================================
+   ส่วนที่ 1 — AI (TensorFlow.js + COCO-SSD)
+   โมเดลนี้รู้จักคลาส "sports ball" อยู่แล้ว จึงจับลูกบาสได้
+   โดยไม่ต้องพึ่งสี ทำให้ทนต่อแสงกลางแจ้งและเสื้อสีใกล้เคียง
+   ========================================================= */
+var AI = {
+  state: "off",        // off | loading | ready | error
+  model: null,
+  busy: false,
+  lastBox: null,       // {x,y,r,score,t} พิกัดใน work
+  lastRun: 0,
+  hits: 0
 };
-function say(t){ el("tapmode").textContent=t; }
+function setAI(state, txt) {
+  AI.state = state;
+  var d = el("aiDot");
+  d.className = "dot" + (state === "ready" ? " ok" : state === "loading" ? " load" : state === "error" ? " err" : "");
+  el("aiTxt").textContent = txt;
+}
+var TFJS_URL = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js";
+var COCO_URL = "https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js";
 
-/* ---------- โหมดแตะ ---------- */
-el("bBall").onclick=()=>{ tapMode="ball"; say("แตะที่ลูกบอลในภาพ (แตะกลางลูก ให้แสงปกติ ไม่ใช่ส่วนที่เป็นเงา)"); };
-el("bHoop").onclick=()=>{ tapMode="hoop"; say("แตะที่กลางห่วงในภาพ"); };
+/* เคยโหลดไฟล์ AI ไว้ในแคชแล้วหรือยัง */
+async function isAICached() {
+  try {
+    if (!window.caches) return false;
+    var c = await caches.open("shotlog-runtime-v1");
+    var hit = await c.match(TFJS_URL);
+    return !!hit;
+  } catch (e) { return false; }
+}
 
-ov.addEventListener("pointerdown",e=>{
-  if(!tapMode||!video.videoWidth) return;
-  const r=ov.getBoundingClientRect();
-  const nx=(e.clientX-r.left)/r.width, ny=(e.clientY-r.top)/r.height;
-  if(tapMode==="ball"){
-    wctx.drawImage(video,0,0,work.width,work.height);
-    const px=Math.round(nx*work.width), py=Math.round(ny*work.height);
-    let R=0,G=0,B=0,n=0;
-    const d=wctx.getImageData(Math.max(0,px-3),Math.max(0,py-3),7,7).data;
-    for(let i=0;i<d.length;i+=4){R+=d[i];G+=d[i+1];B+=d[i+2];n++;}
-    ball={r:R/n,g:G/n,b:B/n};
-    say("จำสีลูกแล้ว · ขั้นที่ 2 · กด “แตะห่วง” แล้วแตะกลางห่วง");
-  }else{
-    hoop={x:nx,y:ny};
-    say("ตั้งห่วงแล้ว · ขั้นที่ 3 · กด “เริ่มจับอัตโนมัติ” แล้วยิงได้เลย");
+function loadScript(src) {
+  return new Promise(function (res, rej) {
+    var s = document.createElement("script");
+    s.src = src; s.async = true;
+    s.onload = res; s.onerror = function () { rej(new Error("โหลดไม่ได้: " + src)); };
+    document.head.appendChild(s);
+  });
+}
+async function initAI() {
+  if (AI.state === "loading" || AI.state === "ready") return;
+  setAI("loading", "กำลังโหลด AI (~25MB ครั้งแรกครั้งเดียว)…");
+  el("bAI").disabled = true;
+  try {
+    if (!window.tf) await loadScript(TFJS_URL);
+    if (!window.cocoSsd) await loadScript(COCO_URL);
+    try { await window.tf.setBackend("webgl"); } catch (e) {}
+    await window.tf.ready();
+    AI.model = await window.cocoSsd.load({ base: "lite_mobilenet_v2" });
+    setAI("ready", "AI พร้อม · backend " + window.tf.getBackend());
+    el("bAI").textContent = "AI ทำงาน";
+    if (geo) el("bRun").disabled = false;
+    say("AI พร้อมแล้ว — ไม่ต้องแตะลูกบอลก็ได้ ระบบจะหาลูกเอง");
+  } catch (err) {
+    setAI("error", "โหลด AI ไม่ได้ (" + err.message + ") — ใช้ตัวจับสีแทนได้");
+    el("bAI").disabled = false;
+    el("bAI").textContent = "ลองใหม่";
   }
-  tapMode=null;
-  el("bRun").disabled=!(ball&&hoop);
-  syncTune();
-});
-
-/* ---------- ตั้งค่าละเอียด ---------- */
-el("bTune").onclick=()=>{ const t=el("tune"); t.style.display=t.style.display==="none"?"block":"none"; };
-function syncTune(){
-  el("sW").value=cfg.w; el("vW").textContent=cfg.w+"%";
-  el("sH").value=cfg.h; el("vH").textContent=cfg.h+"%";
-  el("sT").value=cfg.tol; el("vT").textContent=cfg.tol;
-  el("sM").value=cfg.minPix; el("vM").textContent=cfg.minPix+" จุด";
 }
-["W","H","T","M"].forEach(k=>{
-  el("s"+k).oninput=e=>{
-    const v=+e.target.value;
-    if(k==="W")cfg.w=v; if(k==="H")cfg.h=v; if(k==="T")cfg.tol=v; if(k==="M")cfg.minPix=v;
-    syncTune();
-  };
-});
-syncTune();
+el("bAI").onclick = initAI;
 
-/* ---------- เริ่ม/หยุดจับ ---------- */
-let wake=null;
-async function keepAwake(on){
-  try{
-    if(on && "wakeLock" in navigator && !wake){ wake=await navigator.wakeLock.request("screen"); wake.onrelease=()=>{wake=null;}; }
-    else if(!on && wake){ await wake.release(); wake=null; }
-  }catch(e){ /* เครื่องที่ไม่รองรับก็ข้ามไป */ }
-}
-document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&running) keepAwake(true); });
-
-el("bRun").onclick=()=>{
-  running=!running;
-  keepAwake(running);
-  el("bRun").textContent=running?"หยุดจับอัตโนมัติ":"3 · เริ่มจับอัตโนมัติ";
-  el("bRun").classList.toggle("on",running);
-  say(running
-    ? "กำลังจับ · จอจะไม่ดับเอง · ลูกที่ระบบตัดสินเองมีจุดเหลือง ถ้าผิดแตะชิปนั้นเพื่อสลับ"
-    : "หยุดจับแล้ว ใช้ปุ่มมือได้ตามปกติ");
-  track=[]; state={nearRim:false,tRim:0,lastShot:0};
-};
-
-/* ---------- ลูปวิเคราะห์ภาพ ---------- */
-let lastT=0;
-function loop(){
-  requestAnimationFrame(loop);
-  if(!video.videoWidth) return;
-  const now=performance.now();
-  if(now-lastT<45) return;   // ~22 เฟรม/วินาที
-  lastT=now;
-
-  const W=work.width, H=work.height;
-  wctx.drawImage(video,0,0,W,H);
-
-  let found=null;
-  if(ball&&hoop){
-    // จำกัดพื้นที่วิเคราะห์รอบห่วง เพื่อกันเสื้อผ้าหรือพื้นสีใกล้เคียงมารบกวน
-    const cx=hoop.x*W, cy=hoop.y*H;
-    const rw=cfg.w/100*W, bh=cfg.h/100*H;
-    const x0=Math.max(0,Math.round(cx-rw*2)), x1=Math.min(W,Math.round(cx+rw*2));
-    const y0=Math.max(0,Math.round(cy-bh*2.2)), y1=Math.min(H,Math.round(cy+bh*1.6));
-    const d=wctx.getImageData(x0,y0,x1-x0,y1-y0).data;
-    let sx=0,sy=0,n=0;
-    const tol2=cfg.tol*cfg.tol;
-    for(let y=y0;y<y1;y++){
-      for(let x=x0;x<x1;x++){
-        const i=(((y-y0)*(x1-x0))+(x-x0))*4;
-        const dr=d[i]-ball.r, dg=d[i+1]-ball.g, db=d[i+2]-ball.b;
-        if(dr*dr+dg*dg+db*db<tol2 && d[i]+d[i+1]+d[i+2]>110){ sx+=x; sy+=y; n++; }
+/* เรียก AI แบบไม่บล็อกลูปวาดภาพ */
+async function runAI(now) {
+  if (AI.state !== "ready" || AI.busy || !geo) return;
+  if (now - AI.lastRun < 110) return;                 // ~9 ครั้ง/วินาที
+  AI.busy = true; AI.lastRun = now;
+  try {
+    var roi = roiBox();
+    if (!roi) { AI.busy = false; return; }
+    var CS = 300;
+    crop.width = CS; crop.height = Math.round(CS * roi.h / roi.w);
+    cropCtx.drawImage(work, roi.x0, roi.y0, roi.w, roi.h, 0, 0, crop.width, crop.height);
+    var preds = await AI.model.detect(crop, 8, 0.22);
+    var sx = roi.w / crop.width, sy = roi.h / crop.height;
+    var best = null;
+    for (var i = 0; i < preds.length; i++) {
+      var p = preds[i];
+      if (p.class !== "sports ball" && p.class !== "frisbee" && p.class !== "orange" && p.class !== "apple") continue;
+      var bw = p.bbox[2] * sx, bh = p.bbox[3] * sy;
+      var r = (bw + bh) / 4;
+      var rRatio = r / geo.rExp;
+      if (rRatio < 0.35 || rRatio > 2.6) continue;             // ขนาดไม่สมเหตุผล
+      var conf = p.score * (p.class === "sports ball" ? 1 : 0.75);
+      if (!best || conf > best.score) {
+        best = {
+          x: roi.x0 + (p.bbox[0] + p.bbox[2] / 2) * sx,
+          y: roi.y0 + (p.bbox[1] + p.bbox[3] / 2) * sy,
+          r: r, rRatio: rRatio, score: conf, t: now
+        };
       }
     }
-    matched=n;
-    if(n>=cfg.minPix) found={x:sx/n/W, y:sy/n/H, n};
+    if (best) {
+      AI.lastBox = best; AI.hits++;
+      learnBallColor(best);                                    // ให้ตัวจับสีเรียนสีลูกจาก AI
+    } else if (AI.lastBox && now - AI.lastBox.t > 700) AI.lastBox = null;
+  } catch (e) { /* ข้ามเฟรมที่พัง */ }
+  AI.busy = false;
+}
+
+/* AI เจอลูกที่ไหน → เก็บสีตรงนั้นไว้ให้ตัวจับสีใช้ต่อระหว่างเฟรมที่ AI ยังไม่ทัน */
+function learnBallColor(b) {
+  var px = Math.round(b.x), py = Math.round(b.y), rr = Math.max(2, Math.round(b.r * 0.45));
+  if (px - rr < 0 || py - rr < 0 || px + rr >= WW || py + rr >= WH) return;
+  var d = wctx.getImageData(px - rr, py - rr, rr * 2, rr * 2).data;
+  var R = 0, G = 0, B = 0, n = 0;
+  for (var i = 0; i < d.length; i += 4) { R += d[i]; G += d[i + 1]; B += d[i + 2]; n++; }
+  if (!n) return;
+  R /= n; G /= n; B /= n;
+  var s = Math.max(1, R + G + B);
+  var nu = { cr: R / s, cg: G / s, lum: (R + G + B) / 3 };
+  if (!ballRef) ballRef = nu;
+  else { ballRef.cr = ballRef.cr * 0.75 + nu.cr * 0.25; ballRef.cg = ballRef.cg * 0.75 + nu.cg * 0.25; }
+  el("bBall").classList.add("done");
+}
+
+/* =========================================================
+   ส่วนที่ 2 — กล้อง + ตั้งค่าห่วง
+   ========================================================= */
+el("bCam").onclick = async function () {
+  if (stream) return;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, frameRate: { ideal: 30 } },
+      audio: false
+    });
+    video.srcObject = stream;
+    await video.play();
+    var vw = video.videoWidth || 640, vh = video.videoHeight || 480;
+    WH = Math.round(WW * vh / vw);
+    work.width = WW; work.height = WH;
+    clipCv.width = CLIP_W; clipCv.height = Math.round(CLIP_W * vh / vw);
+    ov.width = vw; ov.height = vh;
+
+    ["bL", "bR", "bF", "bBall"].forEach(function (id) { el(id).disabled = false; });
+    el("bCam").textContent = "กล้องเปิดแล้ว";
+    el("bCam").classList.remove("pri");
+
+    var s = null;
+    try { s = JSON.parse(localStorage.getItem(RIMKEY) || "null"); } catch (e) {}
+    if (s && s.rim) {
+      rim = s.rim; ballRef = s.ballRef || null; rebuildGeo();
+      say("โหลดค่าห่วงครั้งก่อนมาแล้ว · เช็คว่าวงรีทับห่วงพอดีไหม ถ้าเพี้ยนให้ลากจุดเหลือง");
+    } else say("ขั้นที่ 1 · กด “ขอบห่วงซ้าย” แล้วแตะขอบซ้ายสุดของวงห่วงในภาพ");
+
+    /* โหลด AI ให้อัตโนมัติเฉพาะตอนที่เคยโหลดไว้แล้ว (อยู่ในแคช) จะได้ไม่กินเน็ตมือถือ
+       ถ้ายังไม่เคยโหลด ให้ผู้ใช้กดปุ่ม “โหลด AI” เองตอนอยู่ Wi-Fi */
+    if (AI.state === "off") {
+      isAICached().then(function (cached) {
+        if (cached) initAI();
+        else setAI("off", "AI ยังไม่ได้โหลด — กดปุ่มนี้ตอนต่อ Wi-Fi (ครั้งเดียวจบ ~25MB)");
+      });
+    }
+    loop();
+  } catch (err) {
+    say("เปิดกล้องไม่ได้ (" + err.name + ") — ต้องเปิดผ่าน https และกดอนุญาตกล้อง");
+  }
+};
+
+el("bL").onclick = function () { tapMode = "L"; say("แตะ “ขอบซ้ายสุด” ของวงห่วง (วงเหล็ก ไม่ใช่แป้น)"); };
+el("bR").onclick = function () { tapMode = "R"; say("แตะ “ขอบขวาสุด” ของวงห่วง"); };
+el("bF").onclick = function () { tapMode = "F"; say("แตะขอบห่วง “ด้านที่ใกล้ตัวเราที่สุด” — จุดต่ำสุดของวงรีที่เห็น"); };
+el("bBall").onclick = function () { tapMode = "ball"; say("ถือลูกให้เห็นชัดแล้วแตะกลางลูก (ใช้เมื่อไม่ได้เปิด AI)"); };
+
+function rebuildGeo() {
+  if (!rim || !rim.L || !rim.R) { geo = null; el("bRun").disabled = true; return; }
+  var Lx = rim.L.x * WW, Ly = rim.L.y * WH, Rx = rim.R.x * WW, Ry = rim.R.y * WH;
+  var cx = (Lx + Rx) / 2, cy = (Ly + Ry) / 2;
+  var a = Math.max(6, Math.hypot(Rx - Lx, Ry - Ly) / 2);
+  var b = a * 0.28;
+  if (rim.F) b = Math.max(a * 0.10, Math.abs(rim.F.y * WH - cy));
+  geo = { cx: cx, cy: cy, a: a, b: b, rExp: a * BALL_OVER_RIM };
+  ["L", "R", "F"].forEach(function (kk) { if (rim[kk]) el("b" + kk).classList.add("done"); });
+  el("bRun").disabled = !(geo && (ballRef || AI.state === "ready"));
+}
+
+function normPt(e) {
+  var r = ov.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+}
+ov.addEventListener("pointerdown", function (e) {
+  if (!video.videoWidth) return;
+  var p = normPt(e);
+
+  if (tapMode === "ball") {
+    wctx.drawImage(video, 0, 0, WW, WH);
+    var px = Math.min(WW - 4, Math.max(3, Math.round(p.x * WW)));
+    var py = Math.min(WH - 4, Math.max(3, Math.round(p.y * WH)));
+    var d = wctx.getImageData(px - 3, py - 3, 7, 7).data;
+    var R = 0, G = 0, B = 0, n = 0;
+    for (var i = 0; i < d.length; i += 4) { R += d[i]; G += d[i + 1]; B += d[i + 2]; n++; }
+    R /= n; G /= n; B /= n;
+    var s = Math.max(1, R + G + B);
+    ballRef = { cr: R / s, cg: G / s, lum: (R + G + B) / 3 };
+    tapMode = null; saveRim(); el("bBall").classList.add("done"); rebuildGeo();
+    say(geo ? "ครบแล้ว · กด “เริ่มจับอัตโนมัติ”" : "จำสีลูกแล้ว · ตั้งขอบห่วงให้ครบก่อน");
+    return;
+  }
+  if (tapMode === "L" || tapMode === "R" || tapMode === "F") {
+    rim = rim || {};
+    rim[tapMode] = p; tapMode = null; rebuildGeo(); saveRim();
+    if (!rim.R) say("ขั้นที่ 2 · กด “ขอบห่วงขวา” แล้วแตะขอบขวาสุดของห่วง");
+    else if (!rim.F) say("ขั้นที่ 3 · กด “ขอบห่วงใกล้ตัว” แล้วแตะขอบล่างสุดของวงห่วง");
+    else if (!ballRef && AI.state !== "ready") say("ขั้นที่ 4 · เปิด AI หรือกด “แตะลูก” เพื่อจำสีลูก");
+    else say("ครบแล้ว · กด “เริ่มจับอัตโนมัติ” ได้เลย");
+    return;
+  }
+  if (!rim) return;
+  var best = null, bd = 0.06;
+  ["L", "R", "F"].forEach(function (kk) {
+    if (!rim[kk]) return;
+    var dd = Math.hypot(rim[kk].x - p.x, rim[kk].y - p.y);
+    if (dd < bd) { bd = dd; best = kk; }
+  });
+  if (best) { dragging = best; try { ov.setPointerCapture(e.pointerId); } catch (er) {} }
+});
+ov.addEventListener("pointermove", function (e) { if (dragging) { rim[dragging] = normPt(e); rebuildGeo(); } });
+ov.addEventListener("pointerup", function () { if (dragging) { dragging = null; saveRim(); } });
+
+/* ---------- ตั้งค่าละเอียด ---------- */
+el("bTune").onclick = function () { var t = el("tune"); t.style.display = t.style.display === "none" ? "block" : "none"; };
+function syncTune() {
+  el("sC").value = cfg.colTol; el("vC").textContent = cfg.colTol;
+  el("sM").value = cfg.motion; el("vM").textContent = cfg.motion;
+  el("sK").value = cfg.minConf; el("vK").textContent = cfg.minConf + "%";
+  el("sR").value = cfg.rTol; el("vR").textContent = "±" + cfg.rTol + "%";
+  el("bNet").textContent = cfg.net ? "ห่วงนี้: มีตาข่าย" : "ห่วงนี้: ไม่มีตาข่าย / โซ่";
+  el("bNet").classList.toggle("done", !!cfg.net);
+}
+el("bNet").onclick = function () { cfg.net = cfg.net ? 0 : 1; syncTune(); saveCfg(); };
+[["sC", "colTol"], ["sM", "motion"], ["sK", "minConf"], ["sR", "rTol"]].forEach(function (pair) {
+  el(pair[0]).oninput = function (e) { cfg[pair[1]] = +e.target.value; syncTune(); saveCfg(); };
+});
+syncTune();
+el("bReset").onclick = function () {
+  rim = null; geo = null; ballRef = null;
+  try { localStorage.removeItem(RIMKEY); } catch (e) {}
+  ["bL", "bR", "bF", "bBall"].forEach(function (id) { el(id).classList.remove("done"); });
+  el("bRun").disabled = true;
+  say("ล้างแล้ว · เริ่มที่ขั้นที่ 1 ใหม่");
+};
+
+/* ---------- เริ่ม/หยุด ---------- */
+var wake = null;
+async function keepAwake(on) {
+  try {
+    if (on && "wakeLock" in navigator && !wake) { wake = await navigator.wakeLock.request("screen"); wake.onrelease = function () { wake = null; }; }
+    else if (!on && wake) { await wake.release(); wake = null; }
+  } catch (e) {}
+}
+document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible" && running) keepAwake(true); });
+el("bRun").onclick = function () {
+  running = !running;
+  keepAwake(running);
+  el("bRun").textContent = running ? "หยุดจับอัตโนมัติ" : "5 · เริ่มจับอัตโนมัติ";
+  el("bRun").classList.toggle("on", running);
+  track = []; phase = "idle"; armed = null; prevGray = null;
+  say(running ? "กำลังจับ · อย่าขยับมือถือ · ลูกที่ไม่ชัวร์จะเด้งถามพร้อมคลิป" : "หยุดจับแล้ว");
+};
+
+/* =========================================================
+   ส่วนที่ 3 — ตัวจับลูกแบบเร็ว (สี ∩ การเคลื่อนไหว ∩ ความกลม)
+   ใช้เติมช่องว่างระหว่างเฟรมที่ AI ยังประมวลผลไม่ทัน
+   ========================================================= */
+function roiBox() {
+  if (!geo) return null;
+  var pad = geo.a * 2.6;
+  var x0 = Math.max(0, Math.round(geo.cx - pad));
+  var x1 = Math.min(WW, Math.round(geo.cx + pad));
+  var y0 = Math.max(0, Math.round(geo.cy - geo.a * 3.2));
+  var y1 = Math.min(WH, Math.round(geo.cy + geo.a * 2.4));
+  if (x1 - x0 < 10 || y1 - y0 < 10) return null;
+  return { x0: x0, y0: y0, w: x1 - x0, h: y1 - y0 };
+}
+
+function detectFast() {
+  var roi = roiBox();
+  if (!roi || !ballRef) return null;
+  var img = wctx.getImageData(roi.x0, roi.y0, roi.w, roi.h);
+  var d = img.data, w = roi.w, h = roi.h, N = w * h;
+
+  if (!prevGray || prevGray.length !== N) prevGray = new Uint8Array(N);
+  var mask = new Uint8Array(N), gray = new Uint8Array(N);
+  var tol = cfg.colTol / 1000, mth = cfg.motion, count = 0;
+
+  for (var i = 0, p = 0; i < N; i++, p += 4) {
+    var R = d[p], G = d[p + 1], B = d[p + 2];
+    var g = (R * 77 + G * 151 + B * 28) >> 8;
+    gray[i] = g;
+    if (g < 22 || g > 245) continue;
+    if (Math.abs(g - prevGray[i]) <= mth) continue;
+    var s = R + G + B || 1;
+    var dr = R / s - ballRef.cr, dg = G / s - ballRef.cg;
+    if (dr * dr + dg * dg < tol * tol) { mask[i] = 1; count++; }
+  }
+  prevGray.set(gray);
+  matched = count;
+  if (count < 8) return null;
+
+  var seen = new Uint8Array(N), stack = new Int32Array(N), best = null;
+  var minArea = Math.max(9, Math.PI * geo.rExp * geo.rExp * 0.12);
+
+  for (var q = 0; q < N; q++) {
+    if (!mask[q] || seen[q]) continue;
+    var sp = 0; stack[sp++] = q; seen[q] = 1;
+    var area = 0, sx = 0, sy = 0, mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
+    while (sp) {
+      var c = stack[--sp], cxp = c % w, cyp = (c / w) | 0;
+      area++; sx += cxp; sy += cyp;
+      if (cxp < mnx) mnx = cxp; if (cxp > mxx) mxx = cxp;
+      if (cyp < mny) mny = cyp; if (cyp > mxy) mxy = cyp;
+      if (cxp > 0 && mask[c - 1] && !seen[c - 1]) { seen[c - 1] = 1; stack[sp++] = c - 1; }
+      if (cxp < w - 1 && mask[c + 1] && !seen[c + 1]) { seen[c + 1] = 1; stack[sp++] = c + 1; }
+      if (cyp > 0 && mask[c - w] && !seen[c - w]) { seen[c - w] = 1; stack[sp++] = c - w; }
+      if (cyp < h - 1 && mask[c + w] && !seen[c + w]) { seen[c + w] = 1; stack[sp++] = c + w; }
+    }
+    if (area < minArea) continue;
+    var bw = mxx - mnx + 1, bh = mxy - mny + 1;
+    var aspect = Math.min(bw, bh) / Math.max(bw, bh);
+    var fill = area / (bw * bh);
+    var r = Math.sqrt(area / Math.PI);
+    var rRatio = r / geo.rExp;
+    var sA = Math.max(0, 1 - Math.abs(1 - aspect) * 2.2);
+    var sF = Math.max(0, 1 - Math.abs(0.75 - fill) * 2.2);
+    var sS = Math.max(0, 1 - Math.abs(1 - rRatio) / 0.9);
+    var score = sA * 0.32 + sF * 0.28 + sS * 0.40;
+    if (score < 0.34) continue;
+    // ถ้า AI เพิ่งเห็นลูก ให้เชื่อกลุ่มที่อยู่ใกล้ตำแหน่ง AI มากกว่า
+    if (AI.lastBox) {
+      var dist = Math.hypot(roi.x0 + sx / area - AI.lastBox.x, roi.y0 + sy / area - AI.lastBox.y);
+      if (dist > geo.a * 1.8) score *= 0.35;
+    }
+    if (!best || score > best.score) {
+      best = { x: roi.x0 + sx / area, y: roi.y0 + sy / area, r: r, rRatio: rRatio, score: score, src: "fast" };
+    }
+  }
+  return best;
+}
+
+/* รวมผล AI กับตัวจับเร็ว */
+function fuse(now) {
+  var f = detectFast();
+  var a = AI.lastBox && (now - AI.lastBox.t < 240) ? AI.lastBox : null;
+  if (a && f) {
+    var d = Math.hypot(a.x - f.x, a.y - f.y);
+    if (d < geo.a * 1.2) return { x: (a.x + f.x) / 2, y: (a.y + f.y) / 2, r: (a.r + f.r) / 2, rRatio: (a.rRatio + f.rRatio) / 2, score: Math.max(a.score, f.score), src: "ai+fast" };
+    return { x: a.x, y: a.y, r: a.r, rRatio: a.rRatio, score: a.score, src: "ai" };
+  }
+  if (a) return { x: a.x, y: a.y, r: a.r, rRatio: a.rRatio, score: a.score, src: "ai" };
+  return f;
+}
+
+/* =========================================================
+   ส่วนที่ 4 — ตัดสิน "ลงห่วงจริง"
+   ต้องข้ามระนาบห่วงในทิศลง โดยจุดตัดอยู่ในวงห่วงหลังหักรัศมีลูก
+   + ขนาดลูกต้องตรงกับความลึกของห่วง (กันลูกผ่านหน้า/หลังห่วง)
+   + ต้องลงต่อเนื่องใต้ห่วง ไม่เด้งขึ้น ไม่กระเด็นออกข้าง
+   ========================================================= */
+function judge(f, now) {
+  if (!geo) return;
+  /* ลูกที่ลงห่วงจริงมักถูก "ตาข่ายบัง" หายไปสองสามเฟรม
+     ส่วนลูกที่แค่ตกผ่านหน้าห่วงจะเห็นตลอดทาง — ใช้เป็นตัวแยกอีกชั้น */
+  if (!f && phase === "cross" && armed) armed.gap = (armed.gap || 0) + 1;
+
+  if (f) {
+    track.push({ x: f.x, y: f.y, r: f.r, rRatio: f.rRatio, src: f.src, t: now });
+    if (track.length > 30) track.shift();
+  } else if (track.length && now - track[track.length - 1].t > 380) {
+    var lastP = track[track.length - 1];
+    /* ลูกหายจากภาพ — ถ้าตอนนั้นข้ามห่วงลงไปแล้วและกำลังลงอยู่
+       แปลว่าน่าจะ "ลงตาข่าย" ซึ่งบังลูกไว้ = เข้า ไม่ใช่พลาด */
+    if (phase === "cross" && armed) {
+      if (armed.down >= 2) finish(true, Math.min(0.94, armed.conf * 0.95), armed.why + " · แล้วหายเข้าไปในตาข่าย");
+      else finish(false, 0.5, "ลูกหายจากภาพตอนถึงห่วง");
+    } else if (phase === "approach" && lastP.y > geo.cy - geo.a && lastP.y < geo.cy + geo.a * 0.6) {
+      /* ลูกหายไปตรงห่วงพอดีก่อนที่กล้องจะทันเห็นตอนข้าม — เกิดบ่อยเมื่อตาข่ายบัง
+         หรือเฟรมตก ถ้าไม่ดักไว้ ลูกนี้จะไม่ถูกนับเลย ทำให้จำนวนลูกยิงผิด */
+      var offL = Math.abs(lastP.x - geo.cx);
+      var innerL = Math.max(geo.a * 0.12, geo.a - lastP.r * 0.9);
+      if (offL <= innerL) finish(true, 0.70, "ลูกหายไปตรงกลางห่วงพอดี — น่าจะลงตาข่าย");
+      else finish(false, 0.68, "ลูกหายไปตรงข้างห่วง");
+    }
+    track = []; phase = "idle"; armed = null;
+    return;
+  }
+  if (track.length < 2 || !geo) return;
+
+  var p = track[track.length - 2], c = track[track.length - 1];
+  var vy = c.y - p.y, rimY = geo.cy;
+
+  if (phase === "idle" && c.y < rimY - geo.b && vy > 0.2) phase = "approach";
+
+  /* ลูกตกลงมาใกล้ห่วงแล้วกระดอนขึ้น โดยไม่เคยข้ามระนาบห่วงเลย
+     = โดนขอบห่วงหน้าหรือแป้นแล้วเด้งกลับ ต้องนับเป็นพลาด ไม่ใช่ปล่อยผ่าน */
+  if (phase === "approach" && track.length >= 3) {
+    var q = track[track.length - 3];
+    if (c.y < p.y - 0.5 && p.y < q.y - 0.5 && c.y > rimY - geo.a && Math.abs(c.x - geo.cx) < geo.a * 2) {
+      finish(false, 0.85, "ลูกกระดอนขึ้นจากขอบห่วงหรือแป้น ไม่ได้ลงห่วง");
+      return;
+    }
   }
 
-  if(running&&ball&&hoop) judge(found,now);
+  if (phase !== "cross" && p.y < rimY && c.y >= rimY && vy > 0) {
+    /* ต้องเป็นลูกที่ตกลงมาจากเหนือห่วงจริงๆ ไม่ใช่คนถือลูกเดินผ่าน */
+    var cameFromAbove = false;
+    for (var ci = 0; ci < track.length; ci++) { if (track[ci].y < rimY - geo.b) { cameFromAbove = true; break; } }
+    if (!cameFromAbove) return;
+
+    /* ถ้าสองเฟรมนี้ห่างกันเกินไป การประมาณจุดตัดจะเชื่อไม่ได้ */
+    if (c.t - p.t > 200) { track = [{ x: c.x, y: c.y, r: c.r, rRatio: c.rRatio, src: c.src, t: c.t }]; phase = "idle"; return; }
+
+    var t = (rimY - p.y) / ((c.y - p.y) || 1);
+    var xc = p.x + (c.x - p.x) * t;
+    var rc = p.r + (c.r - p.r) * t;
+    var off = Math.abs(xc - geo.cx);
+
+    /* ไกลจากห่วงเกินไป — ไม่ถือว่าเป็นการชู้ตเลย ไม่ต้องนับ */
+    if (off > geo.a * 2.2) { track = []; phase = "idle"; return; }
+
+    /* ลูกจะ "ใส่ลงห่วง" ได้ ศูนย์กลางลูกต้องอยู่ห่างจากกลางห่วงไม่เกิน
+       (รัศมีห่วง − รัศมีลูก) · คูณ 0.9 เผื่อความคลาดเคลื่อนของการวัดเล็กน้อย */
+    var inner = Math.max(geo.a * 0.12, geo.a - rc * 0.9);
+    var rRatio = rc / geo.rExp, rTol = cfg.rTol / 100;
+    var sizeErr = Math.abs(1 - rRatio) / rTol;
+    var sizeOk = sizeErr <= 1;
+
+    /* คิดความมั่นใจจาก "ระยะห่างจากเส้นแบ่ง" เทียบกับความคลาดเคลื่อนที่คาดว่าจะวัดผิดได้
+       (ประมาณ 30% ของรัศมีลูก) — วิธีนี้ไม่ขึ้นกับว่าห่วงในภาพใหญ่หรือเล็ก */
+    var slack = Math.max(2, rc * 0.30);
+    var sCenter = Math.max(0, Math.min(1, (inner - off) / slack));
+    var sSize = Math.max(0, Math.min(1, (rTol - Math.abs(1 - rRatio)) / (rTol * 0.5)));
+    var sTrack = Math.min(1, track.length / 6);
+    var aiSeen = track.filter(function (x) { return x.src && x.src.indexOf("ai") === 0; }).length;
+    var sAI = AI.state === "ready" ? Math.min(1, aiSeen / 3) : 0.5;
+
+    if (off <= inner && sizeOk) {
+      phase = "cross";
+      armed = {
+        t: now, down: 1,          /* เฟรมที่ข้ามห่วงก็นับเป็นการลงหนึ่งครั้งแล้ว */
+        conf: sCenter * 0.34 + sSize * 0.24 + sTrack * 0.16 + sAI * 0.26,
+        why: "ข้ามระนาบห่วงลงล่าง · ห่างจากกลางห่วง " + Math.round((1 - sCenter) * 100) + "% · ขนาดลูก " + Math.round(rRatio * 100) + "% ของที่คาด" + (AI.state === "ready" ? " · AI เห็นลูก " + aiSeen + " เฟรม" : "")
+      };
+    } else {
+      var conf2, why2;
+      if (!sizeOk) {
+        /* ขนาดลูกเพี้ยนยิ่งเกินเกณฑ์มาก ยิ่งชัดว่าลูกอยู่คนละความลึกกับห่วง */
+        conf2 = 0.58 + Math.min(0.37, (sizeErr - 1) * 0.75);
+        why2 = (rRatio > 1 ? "ลูกดูใหญ่กว่าที่ควร " : "ลูกดูเล็กกว่าที่ควร ") + Math.round(rRatio * 100) + "% — "
+             + (rRatio > 1 ? "ผ่านหน้าห่วง ไม่ได้ลงห่วง" : "เลยไปหลังห่วง");
+      } else {
+        var slackM = Math.max(2, rc * 0.30);
+        conf2 = 0.58 + Math.min(0.37, (off - inner) / slackM * 0.37);
+        why2 = "ลูกผ่านนอกวงห่วง — ศูนย์กลางลูกเลยขอบในไป " + Math.round(off - inner) + " px";
+      }
+      finish(false, conf2, why2);
+    }
+    return;
+  }
+
+  if (phase === "cross" && armed) {
+    var makeDepth = Math.max(geo.b * 2.2, geo.a * 0.55);
+    if (vy < -0.35 && c.y < rimY + geo.b * 0.6) { finish(false, 0.82, "ลูกเด้งขึ้นหลังแตะห่วง"); return; }
+    if (Math.abs(c.x - geo.cx) > geo.a * 1.7) { finish(false, 0.80, "ลูกกระเด็นออกด้านข้าง"); return; }
+    if (vy > 0) armed.down++;
+    if (c.y > rimY + makeDepth && armed.down >= 3) {
+      /* ถ้าห่วงมีตาข่าย ลูกที่ลงจริงเกือบทุกลูกจะถูกตาข่ายบังหายไปสองสามเฟรม
+         ลูกที่เห็นชัดตลอดทางลงจึงน่าสงสัยว่าเป็นลูกที่ตกผ่านหน้าห่วง → ลดความมั่นใจ
+         ถ้าห่วงไม่มีตาข่าย สัญญาณนี้ใช้ไม่ได้ จึงลดความมั่นใจลงเล็กน้อยทุกลูกแทน */
+      /* ต้องหายอย่างน้อย 2 เฟรมถึงจะถือว่าตาข่ายบังจริง — หายเฟรมเดียวมักเป็นแค่ตัวจับพลาด */
+      var sawNet = (armed.gap || 0) >= 2;
+      var pen = cfg.net ? (sawNet ? 1.0 : 0.72) : 0.90;
+      var mk = Math.min(0.98, armed.conf + 0.12) * pen;
+      finish(true, mk, armed.why + (sawNet ? " · ตาข่ายบังลูกชั่วขณะแล้วลงต่อ"
+        : cfg.net ? " · แต่ไม่เห็นตาข่ายบังลูกเลย (อาจตกผ่านหน้าห่วง)" : " · ลงต่อเนื่องใต้ห่วง"));
+      return;
+    }
+    if (now - armed.t > 900) { finish(false, 0.5, "ข้ามห่วงแล้วแต่ไม่ลงต่อเนื่อง"); return; }
+  }
+}
+
+function finish(made, conf, why) {
+  var now = performance.now();
+  phase = "idle"; armed = null; track = [];
+  if (now - lastEvent < 900) return;
+  lastEvent = now;
+  if (conf >= cfg.minConf / 100) {
+    add(made, true);
+    if (navigator.vibrate) navigator.vibrate(made ? [18, 36, 18] : 12);
+  } else {
+    askUser(made, conf, why, clipBuf.slice());
+  }
+}
+
+/* ---------- กล่องยืนยัน + คลิป ---------- */
+var clipTimer = null;
+function askUser(guess, conf, why, frames) {
+  modalOpen = true;                       /* พักการตัดสินไว้ก่อน กันลูกใหม่มาแทรกระหว่างถาม */
+  el("mWhy").textContent = why;
+  el("mConf").textContent = "ระบบเดาว่า “" + (guess ? "เข้า" : "พลาด") + "” · ความมั่นใจ " + Math.round(conf * 100) + "% (เกณฑ์นับเอง " + cfg.minConf + "%)";
+  el("modal").classList.add("show");
+  if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+
+  var cv = el("clip"), cx = cv.getContext("2d");
+  cv.width = clipCv.width; cv.height = clipCv.height;
+  var i = 0;
+  clearInterval(clipTimer);
+  if (frames.length) {
+    clipTimer = setInterval(function () {
+      var fr = frames[i % frames.length];
+      cx.putImageData(fr.img, 0, 0);
+      if (fr.g) {
+        cx.strokeStyle = "#2FBF71"; cx.lineWidth = 2;
+        cx.beginPath(); cx.ellipse(fr.g.cx, fr.g.cy, fr.g.a, fr.g.b, 0, 0, Math.PI * 2); cx.stroke();
+      }
+      if (fr.b) {
+        cx.strokeStyle = "#F5B841"; cx.lineWidth = 2;
+        cx.beginPath(); cx.arc(fr.b.x, fr.b.y, Math.max(4, fr.b.r), 0, Math.PI * 2); cx.stroke();
+      }
+      i++;
+    }, 70);
+  }
+  var close = function (choice) {
+    clearInterval(clipTimer);
+    el("modal").classList.remove("show");
+    if (choice !== null) add(choice, false);
+    track = []; phase = "idle"; armed = null; prevGray = null;
+    lastEvent = performance.now();
+    modalOpen = false;
+  };
+  el("mIn").onclick = function () { close(true); };
+  el("mOut").onclick = function () { close(false); };
+  el("mSkip").onclick = function () { close(null); };
+}
+
+/* =========================================================
+   ส่วนที่ 5 — ลูปหลัก
+   ========================================================= */
+var lastT = 0, fcount = 0, fpsT = 0;
+function loop() {
+  requestAnimationFrame(loop);
+  if (!video.videoWidth) return;
+  var now = performance.now();
+  if (now - lastT < 28) return;
+  lastT = now; fcount++;
+  if (now - fpsT > 1000) { fps = fcount; fcount = 0; fpsT = now; }
+
+  wctx.drawImage(video, 0, 0, WW, WH);
+  if (running && !modalOpen) runAI(now);
+
+  var found = (geo && (ballRef || AI.lastBox) && !modalOpen) ? fuse(now) : null;
+
+  clipCtx.drawImage(video, 0, 0, clipCv.width, clipCv.height);
+  var sc = clipCv.width / WW;
+  clipBuf.push({
+    img: clipCtx.getImageData(0, 0, clipCv.width, clipCv.height),
+    b: found ? { x: found.x * sc, y: found.y * sc, r: found.r * sc } : null,
+    g: geo ? { cx: geo.cx * sc, cy: geo.cy * sc, a: geo.a * sc, b: geo.b * sc } : null
+  });
+  if (clipBuf.length > CLIP_N) clipBuf.shift();
+
+  if (running && geo && !modalOpen) judge(found, now);
   drawOverlay(found);
-  el("live").textContent=(running?"จับอยู่ · ":"")+"จุดที่ตรงสี "+matched;
+
+  el("live").textContent =
+    (running ? "● จับอยู่" : "○ หยุด") + "  " + fps + "fps  " +
+    (AI.state === "ready" ? "AI ✓" : AI.state === "loading" ? "AI …" : "AI ✕") + "\n" +
+    (found ? "เจอลูก [" + found.src + "] ขนาด " + Math.round(found.rRatio * 100) + "%" : "ไม่เจอลูก · จุดตรงสี " + matched);
 }
 
-/* ---------- ตัดสินเข้า/พลาด ---------- */
-function judge(f,now){
-  const rw=cfg.w/100, bh=cfg.h/100;
-  const rimTop=hoop.y-rw*0.35, rimBot=hoop.y+rw*0.35;
+/* ---------- วาดทับภาพ ---------- */
+function drawOverlay(f) {
+  var W = ov.width, H = ov.height;
+  octx.clearRect(0, 0, W, H);
+  var sx = W / WW, sy = H / WH;
 
-  if(f){
-    track.push({x:f.x,y:f.y,t:now});
-    if(track.length>16) track.shift();
-    const inRimX=Math.abs(f.x-hoop.x)<=rw;
-    // ลูกอยู่ในกรอบห่วง
-    if(inRimX && f.y>=rimTop && f.y<=rimBot){ state.nearRim=true; state.tRim=now; }
-    // ลูกลงมาถึงโซนใต้ห่วงในแนวดิ่งและยังอยู่ในความกว้างห่วง
-    if(state.nearRim && f.y>rimBot && f.y<=rimBot+bh && Math.abs(f.x-hoop.x)<=rw*0.85){
-      const prev=track[track.length-2];
-      if(prev && f.y>prev.y && now-state.lastShot>1100){ add(true,true); }
-    }
-    // ลูกเด้งขึ้นหรือออกข้างหลังแตะห่วง = พลาด
-    if(state.nearRim && (f.y<rimTop-bh*0.6 || Math.abs(f.x-hoop.x)>rw*1.8) && now-state.lastShot>1100){
-      add(false,true);
-    }
+  if (geo) {
+    octx.lineWidth = Math.max(2, W / 300);
+    octx.strokeStyle = "#F5B841";
+    octx.beginPath();
+    octx.ellipse(geo.cx * sx, geo.cy * sy, geo.a * sx, geo.b * sy, 0, 0, Math.PI * 2);
+    octx.stroke();
+
+    octx.setLineDash([9, 7]);
+    octx.strokeStyle = "#2FBF71";
+    octx.beginPath();
+    octx.moveTo((geo.cx - geo.a) * sx, geo.cy * sy);
+    octx.lineTo((geo.cx - geo.a) * sx, (geo.cy + geo.a * 1.3) * sy);
+    octx.moveTo((geo.cx + geo.a) * sx, geo.cy * sy);
+    octx.lineTo((geo.cx + geo.a) * sx, (geo.cy + geo.a * 1.3) * sy);
+    octx.stroke();
+    octx.setLineDash([]);
+
+    octx.strokeStyle = "rgba(147,162,154,.65)";
+    octx.beginPath();
+    octx.arc((geo.cx + geo.a * 2.0) * sx, (geo.cy - geo.a * 1.7) * sy, geo.rExp * sx, 0, Math.PI * 2);
+    octx.stroke();
   }
-  // แตะห่วงแล้วหายไปจากพื้นที่วิเคราะห์ = ถือว่าพลาด
-  if(state.nearRim && now-state.tRim>950 && now-state.lastShot>1100){ add(false,true); }
-}
-function add(made,auto){
-  shots.push({made,auto:!!auto});
-  state.nearRim=false; state.lastShot=performance.now(); track=[];
-  if(navigator.vibrate) navigator.vibrate(made?[20,40,20]:12);
-  render();
-}
-
-/* ---------- วาดกรอบทับภาพ ---------- */
-function drawOverlay(f){
-  const W=ov.width,H=ov.height;
-  octx.clearRect(0,0,W,H);
-  if(!hoop) return;
-  const cx=hoop.x*W, cy=hoop.y*H, rw=cfg.w/100*W, bh=cfg.h/100*H;
-  octx.lineWidth=Math.max(2,W/320);
-  octx.strokeStyle="#F5B841";
-  octx.strokeRect(cx-rw,cy-rw*0.35,rw*2,rw*0.7);
-  octx.setLineDash([8,6]); octx.strokeStyle="#2FBF71";
-  octx.strokeRect(cx-rw*0.85,cy+rw*0.35,rw*1.7,bh);
-  octx.setLineDash([]);
-  if(f){
-    octx.fillStyle="#F5B841";
-    octx.beginPath(); octx.arc(f.x*W,f.y*H,Math.max(5,W/90),0,7); octx.fill();
+  if (rim) {
+    ["L", "R", "F"].forEach(function (kk) {
+      if (!rim[kk]) return;
+      octx.fillStyle = "#F5B841";
+      octx.beginPath(); octx.arc(rim[kk].x * W, rim[kk].y * H, Math.max(6, W / 110), 0, Math.PI * 2); octx.fill();
+    });
+  }
+  if (track.length > 1) {
+    octx.strokeStyle = "rgba(245,184,65,.85)"; octx.lineWidth = Math.max(2, W / 340);
+    octx.beginPath();
+    for (var i = 0; i < track.length; i++) {
+      var pt = track[i];
+      if (i) octx.lineTo(pt.x * sx, pt.y * sy); else octx.moveTo(pt.x * sx, pt.y * sy);
+    }
+    octx.stroke();
+  }
+  if (f) {
+    octx.strokeStyle = phase === "cross" ? "#2FBF71" : (f.src && f.src.indexOf("ai") === 0 ? "#7CC4FF" : "#F5B841");
+    octx.lineWidth = Math.max(2, W / 280);
+    octx.beginPath(); octx.arc(f.x * sx, f.y * sy, Math.max(5, f.r * sx), 0, Math.PI * 2); octx.stroke();
   }
 }
 
-/* ---------- ปุ่มมือ + สรุป ---------- */
-el("bIn").onclick=()=>add(true,false);
-el("bOut").onclick=()=>add(false,false);
-el("bUndo").onclick=()=>{shots.pop();render();};
-el("bClear").onclick=()=>{ if(!shots.length||confirm("ล้างเซสชันนี้?")){shots=[];render();} };
+/* =========================================================
+   ส่วนที่ 6 — สถิติ / ประวัติ
+   ========================================================= */
+function add(made, auto) { shots.push({ made: made, auto: !!auto }); render(); }
+el("bIn").onclick = function () { add(true, false); };
+el("bOut").onclick = function () { add(false, false); };
+el("bUndo").onclick = function () { shots.pop(); render(); };
+el("bClear").onclick = function () { if (!shots.length || confirm("ล้างเซสชันนี้?")) { shots = []; render(); } };
 
-function render(){
-  const n=shots.length, m=shots.filter(s=>s.made).length;
-  el("pct").textContent=n?Math.round(m/n*100)+"%":"—";
-  el("tally").textContent=n?m+" เข้า จาก "+n+" ลูก":"ยังไม่มีลูกยิง";
-  let c=0,b=0; shots.forEach(s=>{c=s.made?c+1:0;b=Math.max(b,c);});
-  el("streak").textContent=c; el("best").textContent="ดีสุด "+b;
-  const t=shots.slice(-10);
-  el("l10").textContent=t.length?Math.round(t.filter(s=>s.made).length/t.length*100)+"%":"—";
+function render() {
+  var n = shots.length, m = shots.filter(function (s) { return s.made; }).length;
+  el("pct").textContent = n ? Math.round(m / n * 100) + "%" : "—";
+  el("tally").textContent = n ? m + " เข้า จาก " + n + " ลูก" : "ยังไม่มีลูกยิง";
+  var c = 0, b = 0;
+  shots.forEach(function (s) { c = s.made ? c + 1 : 0; b = Math.max(b, c); });
+  el("streak").textContent = c; el("best").textContent = "ดีสุด " + b;
+  var t = shots.slice(-10);
+  el("l10").textContent = t.length ? Math.round(t.filter(function (s) { return s.made; }).length / t.length * 100) + "%" : "—";
 
   el("chips").innerHTML = n
-    ? shots.map((s,i)=>`<button class="chip ${s.made?"m":"x"} ${s.auto?"auto":""}" data-i="${i}">${i+1} ${s.made?"เข้า":"พลาด"}</button>`).join("")
-    : `<span class="empty">จุดสีเหลืองข้างชิปคือลูกที่กล้องตัดสินให้เอง</span>`;
-  el("chips").querySelectorAll(".chip").forEach(cb=>{
-    cb.onclick=()=>{ const i=+cb.dataset.i; shots[i].made=!shots[i].made; shots[i].auto=false; render(); };
+    ? shots.map(function (s, i) {
+        return '<button class="chip ' + (s.made ? "m" : "x") + " " + (s.auto ? "auto" : "") + '" data-i="' + i + '">' + (i + 1) + " " + (s.made ? "เข้า" : "พลาด") + "</button>";
+      }).join("")
+    : '<span class="empty">ยังไม่มีลูกในเซสชันนี้ · จุดเหลืองข้างชิป = กล้องตัดสินเอง</span>';
+  Array.prototype.forEach.call(el("chips").querySelectorAll(".chip"), function (cb) {
+    cb.onclick = function () { var i = +cb.dataset.i; shots[i].made = !shots[i].made; shots[i].auto = false; render(); };
   });
 }
 
-/* ---------- ประวัติ ---------- */
-const readAll=()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return[]}};
-el("bSave").onclick=()=>{
-  if(!shots.length) return;
-  const m=shots.filter(s=>s.made).length;
-  const a=readAll();
-  a.push({at:new Date().toISOString(),n:shots.length,made:m,pct:Math.round(m/shots.length*100),
-          autoFixed:shots.filter(s=>!s.auto).length});
-  try{localStorage.setItem(KEY,JSON.stringify(a));}catch(e){}
-  shots=[]; render(); renderHist();
+function readAll() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { return []; } }
+el("bSave").onclick = function () {
+  if (!shots.length) return;
+  var m = shots.filter(function (s) { return s.made; }).length;
+  var a = readAll();
+  a.push({ at: new Date().toISOString(), n: shots.length, made: m, pct: Math.round(m / shots.length * 100) });
+  try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {}
+  shots = []; render(); renderHist();
 };
-function renderHist(){
-  const a=readAll().slice(-12).reverse();
-  el("hist").innerHTML=a.length? a.map(s=>{
-    const d=new Date(s.at);
-    return `<div class="hist"><span>${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}</span>
-    <span class="n">${s.made}/${s.n} · ${s.pct}%</span></div>`;
-  }).join("") : `<p class="empty">ยังไม่มีเซสชันที่บันทึกไว้</p>`;
+function renderHist() {
+  var a = readAll().slice(-12).reverse();
+  el("hist").innerHTML = a.length ? a.map(function (s) {
+    var d = new Date(s.at);
+    return '<div class="hist"><span>' + d.getDate() + "/" + (d.getMonth() + 1) + " " +
+      String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") +
+      '</span><span class="n">' + s.made + "/" + s.n + " · " + s.pct + "%</span></div>";
+  }).join("") : '<p class="empty">ยังไม่มีเซสชันที่บันทึกไว้</p>';
 }
 
-if("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+setAI("off", "AI ตรวจจับลูกบอล — ยังไม่โหลด");
 render(); renderHist();
 </script>
 </body>
