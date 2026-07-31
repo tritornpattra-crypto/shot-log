@@ -189,8 +189,14 @@
     <p class="hint" style="margin-top:0">เทรนโมเดลจิ๋วในมือถือคุณเอง ใช้เวลา ~30 วินาที ไม่ส่งภาพออกไปไหน · ทำครั้งเดียวจำถาวร แล้วครั้งต่อไปกดปุ่มเดียวหาห่วงเจอเลย</p>
     <p class="hint"><b>วิธีที่ง่ายที่สุด:</b> แตะที่ห่วง 1 ครั้งให้วงรีทับพอดี → กด <b>“ถ่ายวิดีโอเก็บตัวอย่างอัตโนมัติ”</b> → เดินถือมือถือรอบๆ ห่วงช้าๆ เปลี่ยนมุม ระยะ ความสูง ให้ห่วงอยู่ในภาพตลอด ~30 วินาที → แอปติดตามห่วงเองและเก็บให้ครบ → กด <b>“เทรนโมเดล”</b></p>
     <div class="row">
-      <button id="bScan" disabled>ถ่ายวิดีโอเก็บตัวอย่างอัตโนมัติ</button>
+      <button id="bScan" disabled>ถ่ายสดเก็บตัวอย่างอัตโนมัติ</button>
     </div>
+    <div class="row">
+      <button id="bVid">ใช้ไฟล์วิดีโอที่ถ่ายไว้</button>
+      <button id="bCamBack" style="display:none">กลับไปใช้กล้อง</button>
+    </div>
+    <input type="file" id="vidFile" accept="video/*" style="display:none">
+    <p class="hint" style="margin-top:6px">ถ่ายวิดีโอรอบห่วง 30 วินาทีด้วยแอปกล้องปกติก็ได้ แล้วกด “ใช้ไฟล์วิดีโอที่ถ่ายไว้” → แตะที่ห่วงในภาพ 1 ครั้ง → กด “ถ่ายสดเก็บตัวอย่างอัตโนมัติ” แอปจะดูวิดีโอแล้วเก็บให้เอง</p>
     <div class="row">
       <button id="bGrab" disabled>เก็บทีละรูป (0)</button>
       <button id="bTrain" disabled>เทรนโมเดล</button>
@@ -1585,8 +1591,47 @@ function toggleScan() {
   }
 }
 el("bScan").onclick = function () {
-  if (!geo) { say("แตะที่ห่วง 1 ครั้งให้วงรีทับพอดีก่อน แล้วค่อยเริ่มถ่าย"); return; }
+  if (!video.videoWidth) { say("เปิดกล้อง หรือเลือกไฟล์วิดีโอก่อน"); return; }
+  if (!geo) { say("แตะที่ห่วงในภาพ 1 ครั้งให้วงรีทับพอดีก่อน แล้วค่อยเริ่มเก็บ"); return; }
   toggleScan();
+};
+
+/* ---------- ใช้ไฟล์วิดีโอที่ถ่ายไว้แทนกล้องสด ---------- */
+var vidURL = null;
+el("bVid").onclick = function () { el("vidFile").click(); };
+el("vidFile").onchange = function (e) {
+  var f = e.target.files && e.target.files[0];
+  if (!f) return;
+  if (scanOn) toggleScan();
+  if (running) el("bRun").click();
+  if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+  if (vidURL) { try { URL.revokeObjectURL(vidURL); } catch (er) {} }
+  vidURL = URL.createObjectURL(f);
+
+  rim = null; geo = null; prevGray = null; track = []; phase = "idle"; armed = null;
+  video.srcObject = null;
+  video.src = vidURL;
+  video.loop = true;
+  video.muted = true;
+  video.playbackRate = 0.75;                 /* ช้าลงหน่อย ติดตามห่วงได้แม่นขึ้น */
+  video.onloadedmetadata = function () {
+    var vw = video.videoWidth || 640, vh = video.videoHeight || 480;
+    WH = Math.round(WW * vh / vw);
+    work.width = WW; work.height = WH;
+    clipCv.width = CLIP_W; clipCv.height = Math.round(CLIP_W * vh / vw);
+    ov.width = vw; ov.height = vh;
+    ["bL", "bR", "bF", "bBall", "bAuto", "bGrab", "bScan"].forEach(function (id) { el(id).disabled = false; });
+    el("bCamBack").style.display = "";
+    say("โหลดวิดีโอแล้ว (" + vw + "×" + vh + ") · แตะที่ “วงเหล็กของห่วง” ในภาพ 1 ครั้ง แล้วกด “ถ่ายสดเก็บตัวอย่างอัตโนมัติ”");
+    video.play().catch(function () { say("กดที่ภาพเพื่อเล่นวิดีโอ"); });
+    if (!loopStarted) { loopStarted = true; loop(); }
+  };
+};
+el("bCamBack").onclick = async function () {
+  if (scanOn) toggleScan();
+  video.loop = false; video.playbackRate = 1; video.removeAttribute("src"); video.load();
+  el("bCamBack").style.display = "none";
+  try { await startCamera(camFacing); } catch (e) { say("เปิดกล้องไม่ได้: " + e.name); }
 };
 
 el("bTrain").onclick = async function () {
@@ -1708,7 +1753,7 @@ async function loadRimModel() {
 }
 
 /* ---------- เวอร์ชัน + ปุ่มบังคับอัปเดต ---------- */
-var APP_VERSION = "4.1";
+var APP_VERSION = "4.2";
 el("verLine").textContent = "เวอร์ชัน " + APP_VERSION + " · ถ้าปุ่มหรือหน้าตาไม่ตรงกับที่คุยกันไว้ แปลว่ามือถือยังใช้ของเก่าอยู่ ให้กดปุ่มด้านบนนี้";
 
 el("bManual").onclick = function () {
