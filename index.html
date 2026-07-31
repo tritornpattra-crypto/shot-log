@@ -124,17 +124,22 @@
       <button id="bAI" style="margin-left:auto;padding:6px 10px;font-size:12px">โหลด AI</button>
     </div>
 
+    <p class="hint" style="margin-top:10px"><b>ตั้งห่วง: แตะที่วงเหล็กของห่วงในภาพ 1 ครั้ง</b> — ระบบจะหาขอบซ้าย/ขวา/ล่างให้เอง (เรียนสีห่วงจากจุดที่แตะ ใช้ได้ทั้งห่วงส้ม ห่วงเหล็ก ห่วงซีด) · แตะซ้ำได้ถ้ายังไม่พอดี</p>
+
     <div class="row">
-      <button id="bAuto" disabled>ค้นหาห่วงอัตโนมัติ</button>
+      <button id="bAuto" disabled>ลองหาห่วงเองทั้งภาพ</button>
       <button id="bTestAI" disabled>ทดสอบ AI กับภาพตอนนี้</button>
     </div>
 
+    <details style="margin-top:8px">
+    <summary class="hint" style="cursor:pointer">ตั้งห่วงเองทีละจุด (ใช้เมื่อแตะครั้งเดียวแล้วไม่เข้าที่)</summary>
     <div class="steps">
       <button id="bL" disabled>1 · ขอบห่วงซ้าย</button>
       <button id="bR" disabled>2 · ขอบห่วงขวา</button>
       <button id="bF" disabled>3 · ขอบห่วงใกล้ตัว</button>
       <button id="bBall" disabled>4 · แตะลูก (ถ้าไม่ใช้ AI)</button>
     </div>
+    </details>
     <div class="row">
       <button id="bRun" disabled>5 · เริ่มจับอัตโนมัติ</button>
       <button id="bTune">ตั้งค่าละเอียด</button>
@@ -175,6 +180,24 @@
       <button id="bClear">ล้าง</button>
     </div>
     <div class="chips" id="chips" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card">
+    <h2>สอนแอปให้รู้จักห่วงของคุณ (ไม่บังคับ)</h2>
+    <p class="hint" style="margin-top:0">เทรนโมเดลจิ๋วในมือถือคุณเอง ใช้เวลา ~30 วินาที ไม่ส่งภาพออกไปไหน · ทำครั้งเดียวจำถาวร แล้วครั้งต่อไปกดปุ่มเดียวหาห่วงเจอเลย</p>
+    <p class="hint"><b>วิธีที่ง่ายที่สุด:</b> แตะที่ห่วง 1 ครั้งให้วงรีทับพอดี → กด <b>“ถ่ายวิดีโอเก็บตัวอย่างอัตโนมัติ”</b> → เดินถือมือถือรอบๆ ห่วงช้าๆ เปลี่ยนมุม ระยะ ความสูง ให้ห่วงอยู่ในภาพตลอด ~30 วินาที → แอปติดตามห่วงเองและเก็บให้ครบ → กด <b>“เทรนโมเดล”</b></p>
+    <div class="row">
+      <button id="bScan" disabled>ถ่ายวิดีโอเก็บตัวอย่างอัตโนมัติ</button>
+    </div>
+    <div class="row">
+      <button id="bGrab" disabled>เก็บทีละรูป (0)</button>
+      <button id="bTrain" disabled>เทรนโมเดล</button>
+    </div>
+    <div class="row">
+      <button id="bFindML" disabled>หาห่วงด้วยโมเดล</button>
+      <button id="bWipeML">ลบโมเดล</button>
+    </div>
+    <p class="hint" id="trainStat">ยังไม่มีโมเดล</p>
   </div>
 
   <div class="card">
@@ -398,6 +421,7 @@ async function initAI() {
     setAI("ready", "AI พร้อม · ตัวคำนวณ " + AI.backend + (cached ? " · ใช้ออฟไลน์ได้แล้ว" : ""));
     el("bAI").textContent = "AI ทำงานอยู่";
     el("bTestAI").disabled = !stream;
+    loadRimModel();
     if (geo) el("bRun").disabled = false;
     say("AI พร้อมแล้ว — ระบบจะหาลูกบอลเอง");
   } catch (err) {
@@ -528,8 +552,9 @@ async function startCamera(facing) {
   clipCv.width = CLIP_W; clipCv.height = Math.round(CLIP_W * vh / vw);
   ov.width = vw; ov.height = vh;
 
-  ["bL", "bR", "bF", "bBall", "bAuto"].forEach(function (id) { el(id).disabled = false; });
+  ["bL", "bR", "bF", "bBall", "bAuto", "bGrab", "bScan"].forEach(function (id) { el(id).disabled = false; });
   el("bTestAI").disabled = AI.state !== "ready";
+  el("bFindML").disabled = !RIM.model;
   el("bCam").textContent = "กล้องเปิดแล้ว";
   el("bCam").classList.remove("pri");
   el("bFlip").textContent = facing === "environment" ? "กล้อง: หลัง ⇄" : "กล้อง: หน้า ⇄";
@@ -540,7 +565,7 @@ async function startCamera(facing) {
     rim = s.rim; ballRef = s.ballRef || null; rebuildGeo();
     say("โหลดค่าห่วงของกล้อง" + (facing === "environment" ? "หลัง" : "หน้า") + "ครั้งก่อนมาแล้ว · เช็คว่าวงรีทับห่วงพอดีไหม ถ้าเพี้ยนให้ลากจุดเหลือง");
   } else {
-    say("ขั้นที่ 1 · กด “ขอบห่วงซ้าย” แล้วแตะขอบซ้ายสุดของวงห่วงในภาพ");
+    say("แตะที่ “วงเหล็กของห่วง” ในภาพ 1 ครั้ง — ระบบจะหาขอบซ้าย/ขวา/ล่างให้เอง");
   }
 }
 
@@ -652,6 +677,93 @@ function autoFindRim() {
   };
 }
 
+/* =========================================================
+   แตะครั้งเดียวตรงห่วง แล้วขยายหาขอบเอง
+   เรียนสีของห่วงจากจุดที่แตะ จึงใช้ได้กับห่วงทุกสี ไม่ยึดว่าต้องเป็นสีส้ม
+   ========================================================= */
+function refineRimFromTap(nx, ny) {
+  if (!video.videoWidth) return null;
+  wctx.drawImage(video, 0, 0, WW, WH);
+  var px = Math.min(WW - 4, Math.max(3, Math.round(nx * WW)));
+  var py = Math.min(WH - 4, Math.max(3, Math.round(ny * WH)));
+
+  /* สีของห่วงตรงจุดที่แตะ */
+  var sd = wctx.getImageData(px - 2, py - 2, 5, 5).data;
+  var tR = 0, tG = 0, tB = 0, cN = 0;
+  for (var i = 0; i < sd.length; i += 4) { tR += sd[i]; tG += sd[i + 1]; tB += sd[i + 2]; cN++; }
+  tR /= cN; tG /= cN; tB /= cN;
+  var ts = Math.max(1, tR + tG + tB);
+  var tcr = tR / ts, tcg = tG / ts, tlum = (tR + tG + tB) / 3;
+
+  /* หน้าต่างค้นหารอบจุดที่แตะ */
+  var x0 = Math.max(0, px - Math.round(WW * 0.42)), x1 = Math.min(WW, px + Math.round(WW * 0.42));
+  var y0 = Math.max(0, py - Math.round(WH * 0.22)), y1 = Math.min(WH, py + Math.round(WH * 0.30));
+  var w = x1 - x0, h = y1 - y0;
+  if (w < 12 || h < 8) return null;
+  var img = wctx.getImageData(x0, y0, w, h).data;
+
+  /* ลองผ่อนเกณฑ์ทีละขั้นจนกว่าจะได้รูปทรงที่เหมือนห่วง */
+  var tries = [[0.030, 42], [0.045, 60], [0.065, 85], [0.090, 115]];
+  for (var t = 0; t < tries.length; t++) {
+    var tol = tries[t][0], lumTol = tries[t][1];
+    var N = w * h, mask = new Uint8Array(N);
+    for (var k = 0, p = 0; k < N; k++, p += 4) {
+      var R = img[p], G = img[p + 1], B = img[p + 2];
+      var s = R + G + B || 1;
+      var dr = R / s - tcr, dg = G / s - tcg;
+      if (dr * dr + dg * dg < tol * tol && Math.abs((R + G + B) / 3 - tlum) < lumTol) mask[k] = 1;
+    }
+    /* flood fill จากจุดที่แตะ (หาจุดตั้งต้นที่ใกล้ที่สุดถ้าจุดนั้นไม่เข้าเกณฑ์) */
+    var sx = px - x0, sy = py - y0, seed = -1;
+    for (var rad = 0; rad < 14 && seed < 0; rad++) {
+      for (var dy = -rad; dy <= rad && seed < 0; dy++) {
+        for (var dx = -rad; dx <= rad && seed < 0; dx++) {
+          var qx = sx + dx, qy = sy + dy;
+          if (qx < 0 || qy < 0 || qx >= w || qy >= h) continue;
+          if (mask[qy * w + qx]) seed = qy * w + qx;
+        }
+      }
+    }
+    if (seed < 0) continue;
+
+    var seen = new Uint8Array(N), st = new Int32Array(N), sp = 0;
+    st[sp++] = seed; seen[seed] = 1;
+    var mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9, area = 0;
+    var rowCnt = new Int32Array(h), rowMin = new Int32Array(h).fill(1e9), rowMax = new Int32Array(h).fill(-1);
+    while (sp) {
+      var c = st[--sp], cx = c % w, cy = (c / w) | 0;
+      area++;
+      if (cx < mnx) mnx = cx; if (cx > mxx) mxx = cx;
+      if (cy < mny) mny = cy; if (cy > mxy) mxy = cy;
+      rowCnt[cy]++; if (cx < rowMin[cy]) rowMin[cy] = cx; if (cx > rowMax[cy]) rowMax[cy] = cx;
+      if (cx > 0 && mask[c - 1] && !seen[c - 1]) { seen[c - 1] = 1; st[sp++] = c - 1; }
+      if (cx < w - 1 && mask[c + 1] && !seen[c + 1]) { seen[c + 1] = 1; st[sp++] = c + 1; }
+      if (cy > 0 && mask[c - w] && !seen[c - w]) { seen[c - w] = 1; st[sp++] = c - w; }
+      if (cy < h - 1 && mask[c + w] && !seen[c + w]) { seen[c + w] = 1; st[sp++] = c + w; }
+    }
+    var bw = mxx - mnx + 1, bh = mxy - mny + 1;
+    if (bw < WW * 0.05) continue;            /* แคบไป */
+    if (bw > WW * 0.92) continue;            /* กว้างเกิน น่าจะจับติดพื้นหลัง */
+    if (bh > bw * 1.05) continue;            /* ห่วงต้องกว้างกว่าสูง */
+
+    /* แถวที่กว้างที่สุด = เส้นผ่านศูนย์กลางของวงห่วงในภาพ */
+    var bestRow = -1, bestSpan = -1;
+    for (var yy = mny; yy <= mxy; yy++) {
+      if (rowMax[yy] < 0) continue;
+      var span = rowMax[yy] - rowMin[yy] + 1;
+      if (span > bestSpan) { bestSpan = span; bestRow = yy; }
+    }
+    if (bestRow < 0 || bestSpan < WW * 0.05) continue;
+
+    return {
+      L: { x: (x0 + rowMin[bestRow]) / WW, y: (y0 + bestRow) / WH },
+      R: { x: (x0 + rowMax[bestRow]) / WW, y: (y0 + bestRow) / WH },
+      F: { x: (x0 + (mnx + mxx) / 2) / WW, y: (y0 + mxy) / WH }
+    };
+  }
+  return null;
+}
+
 el("bAuto").onclick = function () {
   var r = autoFindRim();
   if (!r) { say("หาห่วงอัตโนมัติไม่เจอ — ลองเล็งให้เห็นห่วงชัดขึ้น หรือแตะตั้งเอง 3 จุด"); return; }
@@ -706,7 +818,18 @@ ov.addEventListener("pointerdown", function (e) {
     else say("ครบแล้ว · กด “เริ่มจับอัตโนมัติ” ได้เลย");
     return;
   }
-  if (!rim) return;
+  /* ยังไม่เคยตั้งห่วง → แตะตรงวงห่วงครั้งเดียว ระบบขยายหาขอบซ้าย/ขวา/ล่างเอง */
+  if (!rim || !geo) {
+    var r1 = refineRimFromTap(p.x, p.y);
+    if (r1) {
+      rim = r1; rebuildGeo(); saveRim();
+      say("ตั้งห่วงให้แล้วจากการแตะครั้งเดียว · ถ้าวงรีไม่ทับพอดี แตะที่ห่วงใหม่อีกครั้ง หรือลากจุดเหลืองปรับ");
+    } else {
+      say("ยังหาขอบห่วงไม่เจอ — ลองแตะให้โดน “เส้นวงเหล็ก” ตรงๆ ไม่ใช่ตรงกลางที่โล่งหรือตรงตาข่าย");
+    }
+    return;
+  }
+
   var best = null, bd = 0.06;
   ["L", "R", "F"].forEach(function (kk) {
     if (!rim[kk]) return;
@@ -1136,6 +1259,14 @@ function loop() {
   if (now - fpsT > 1000) { fps = fcount; fcount = 0; fpsT = now; }
 
   wctx.drawImage(video, 0, 0, WW, WH);
+
+  /* โหมดถ่ายเก็บตัวอย่างห่วง — ทำงานแทนการจับลูก */
+  if (scanOn) {
+    if (now - scanT > 200) { scanT = now; scanStep(); }
+    drawOverlay(null);
+    return;
+  }
+
   if (running && !modalOpen) runAI(now);
 
   var found = (geo && (ballRef || AI.lastBox) && !modalOpen) ? fuse(now) : null;
@@ -1263,8 +1394,248 @@ function renderHist() {
   }).join("") : '<p class="empty">ยังไม่มีเซสชันที่บันทึกไว้</p>';
 }
 
+/* =========================================================
+   โมเดลรู้จักห่วง — เทรนในมือถือผู้ใช้เอง
+   ห่วงอยู่นิ่งและกล้องอยู่นิ่ง จึงไม่ต้องใช้โมเดลตรวจจับทั่วไปที่หนัก
+   ใช้ตัวจำแนกภาพจิ๋ว ("แผ่นนี้ใช่ห่วงไหม") แล้วเลื่อนไล่ทั้งภาพหาจุดที่คะแนนสูงสุด
+   ข้อมูลทั้งหมดอยู่ในเครื่อง ไม่ส่งออกไปไหน
+   ========================================================= */
+var PW = 40, PH = 20, PCH = 2;                    /* ขนาดแผ่นตัวอย่าง กว้าง×สูง×2 ช่อง (ความสว่าง + ความแดง) */
+var MODEL_KEY = "indexeddb://shotlog-rim-cnn";
+var patchCv = document.createElement("canvas");
+patchCv.width = PW; patchCv.height = PH;
+var patchCtx = patchCv.getContext("2d", { willReadFrequently: true });
+var RIM = { pos: [], neg: [], model: null, training: false, acc: null };
+
+function patchFrom(sx, sy, sw, sh) {
+  if (sw < 3 || sh < 2) return null;
+  patchCtx.drawImage(work, sx, sy, sw, sh, 0, 0, PW, PH);
+  var d = patchCtx.getImageData(0, 0, PW, PH).data;
+  var out = new Float32Array(PW * PH * PCH);
+  for (var i = 0, p = 0; i < PW * PH; i++, p += 4) {
+    var R = d[p], G = d[p + 1], B = d[p + 2];
+    out[i * 2] = ((R * 0.299 + G * 0.587 + B * 0.114) / 255 - 0.5) * 2;   /* ความสว่าง */
+    out[i * 2 + 1] = ((R - (G + B) / 2) / 255);                            /* ความแดง (ช่วยกับห่วงสีส้ม) */
+  }
+  return out;
+}
+
+/* กล่องรอบห่วงจาก geo ปัจจุบัน — เผื่อขอบไว้เล็กน้อยให้เห็นบริบท */
+function rimBox(scale, dx, dy) {
+  var w = geo.a * 2 * (scale || 1);
+  var h = Math.max(geo.b * 2, geo.a * 0.5) * (scale || 1) * 1.5;
+  return {
+    sx: geo.cx - w / 2 + (dx || 0), sy: geo.cy - h * 0.45 + (dy || 0),
+    sw: w, sh: h
+  };
+}
+
+var JIT = [[1, 0, 0], [1, -3, 0], [1, 3, 0], [1, 0, -3], [1, 0, 3],
+           [0.9, 0, 0], [1.12, 0, 0], [0.95, -2, 2], [1.06, 2, -2]];
+
+/* เก็บตัวอย่างจากเฟรมปัจจุบัน (ต้องวาดภาพลง work มาก่อนแล้ว) */
+function collectSamples(nNeg) {
+  for (var i = 0; i < JIT.length; i++) {
+    var b = rimBox(JIT[i][0], JIT[i][1], JIT[i][2]);
+    var v = patchFrom(b.sx, b.sy, b.sw, b.sh);
+    if (v) RIM.pos.push(v);
+  }
+  var box = rimBox(1, 0, 0), tries = 0, negAdded = 0, want = nNeg || 26;
+  while (negAdded < want && tries < 400) {
+    tries++;
+    var w2 = box.sw * (0.6 + Math.random() * 1.1);
+    var h2 = box.sh * (0.6 + Math.random() * 1.1);
+    var x2 = Math.random() * (WW - w2), y2 = Math.random() * (WH - h2);
+    var ox = Math.max(0, Math.min(x2 + w2, box.sx + box.sw) - Math.max(x2, box.sx));
+    var oy = Math.max(0, Math.min(y2 + h2, box.sy + box.sh) - Math.max(y2, box.sy));
+    if (ox * oy > 0.12 * w2 * h2) continue;                 /* ทับห่วงมากไป ข้าม */
+    var nv = patchFrom(x2, y2, w2, h2);
+    if (nv) { RIM.neg.push(nv); negAdded++; }
+  }
+}
+function grabStat(extra) {
+  var rounds = Math.round(RIM.pos.length / JIT.length);
+  el("bGrab").textContent = "เก็บทีละรูป (" + rounds + ")";
+  el("bTrain").disabled = rounds < 6 || RIM.training;
+  el("trainStat").textContent = "เก็บแล้ว " + rounds + " เฟรม · ภาพตัวอย่าง " + RIM.pos.length + " บวก / " + RIM.neg.length + " ลบ" +
+    (rounds < 6 ? " — ต้องได้อย่างน้อย 6 เฟรมถึงจะเทรนได้" : " — เทรนได้แล้ว (ยิ่งเยอะยิ่งดี แนะนำ 60+)") + (extra ? " · " + extra : "");
+  return rounds;
+}
+
+el("bGrab").onclick = function () {
+  if (!geo) { say("ตั้งห่วงก่อน (แตะที่วงเหล็ก 1 ครั้ง) แล้วค่อยเก็บตัวอย่าง"); return; }
+  wctx.drawImage(video, 0, 0, WW, WH);
+  collectSamples();
+  var r = grabStat();
+  say("เก็บเฟรมที่ " + r + " แล้ว");
+};
+
+/* =========================================================
+   โหมดถ่ายวิดีโอ — แตะห่วงครั้งเดียว แล้วเดินถือมือถือรอบๆ
+   แอปจะ "ติดตาม" ห่วงเองทุกเฟรมและเก็บตัวอย่างให้อัตโนมัติ
+   ได้ตัวอย่างเป็นร้อยจากการแตะแค่ครั้งเดียว
+   ========================================================= */
+var scanOn = false, scanT = 0, scanOk = 0, scanLost = 0;
+
+function scanStep() {
+  if (!geo) return;
+  wctx.drawImage(video, 0, 0, WW, WH);
+  var prevA = geo.a, prevCx = geo.cx, prevCy = geo.cy;
+  var r = refineRimFromTap(geo.cx / WW, geo.cy / WH);
+  var ok = false;
+  if (r) {
+    var nl = r.L.x * WW, nr = r.R.x * WW;
+    var na = Math.abs(nr - nl) / 2, ncx = (nl + nr) / 2, ncy = r.L.y * WH;
+    /* รับเฉพาะเมื่อขนาดและตำแหน่งเปลี่ยนแบบสมเหตุผล กันไปเกาะวัตถุอื่น */
+    if (na > 6 && Math.abs(na - prevA) / prevA < 0.45 &&
+        Math.hypot(ncx - prevCx, ncy - prevCy) < prevA * 1.3) {
+      rim = r; rebuildGeo(); ok = true;
+    }
+  }
+  if (ok) { collectSamples(14); scanOk++; }
+  else scanLost++;
+
+  var rounds = grabStat("ติดตามได้ " + scanOk + " เฟรม · หลุด " + scanLost);
+  el("live").textContent = "โหมดถ่ายเก็บตัวอย่าง\nได้ " + scanOk + " เฟรม" + (ok ? " · ล็อกห่วงอยู่" : " · หาห่วงไม่เจอ ชะลอการขยับ");
+  if (scanOk >= 120) toggleScan();
+}
+
+function toggleScan() {
+  scanOn = !scanOn;
+  el("bScan").textContent = scanOn ? "หยุดถ่ายเก็บตัวอย่าง" : "ถ่ายวิดีโอเก็บตัวอย่างอัตโนมัติ";
+  el("bScan").classList.toggle("on", scanOn);
+  if (scanOn) {
+    scanOk = 0; scanLost = 0;
+    say("เดินถือมือถือรอบๆ ห่วงช้าๆ · เปลี่ยนมุม ระยะ ความสูง · ให้ห่วงอยู่ในภาพตลอด · แอปเก็บให้เอง จะหยุดเองเมื่อครบ 120 เฟรม");
+  } else {
+    say("หยุดเก็บแล้ว · ได้ " + scanOk + " เฟรม" + (scanOk >= 40 ? " — พอเทรนได้แล้ว กด “เทรนโมเดล”" : " — แนะนำเก็บเพิ่มให้ได้ 40+ เฟรม"));
+  }
+}
+el("bScan").onclick = function () {
+  if (!geo) { say("แตะที่ห่วง 1 ครั้งให้วงรีทับพอดีก่อน แล้วค่อยเริ่มถ่าย"); return; }
+  toggleScan();
+};
+
+el("bTrain").onclick = async function () {
+  if (RIM.training) return;
+  if (!window.tf) { say("ต้องกด “โหลด AI” ก่อน เพราะการเทรนใช้ไลบรารีเดียวกัน"); return; }
+  RIM.training = true;
+  el("bTrain").disabled = true;
+  try {
+    var n = RIM.pos.length + RIM.neg.length;
+    var xs = new Float32Array(n * PW * PH * PCH), ys = new Float32Array(n);
+    var idx = 0, j;
+    for (j = 0; j < RIM.pos.length; j++, idx++) { xs.set(RIM.pos[j], idx * PW * PH * PCH); ys[idx] = 1; }
+    for (j = 0; j < RIM.neg.length; j++, idx++) { xs.set(RIM.neg[j], idx * PW * PH * PCH); ys[idx] = 0; }
+
+    var X = tf.tensor4d(xs, [n, PH, PW, PCH]);
+    var Y = tf.tensor2d(ys, [n, 1]);
+
+    var m = tf.sequential();
+    m.add(tf.layers.conv2d({ inputShape: [PH, PW, PCH], filters: 8, kernelSize: 3, padding: "same", activation: "relu" }));
+    m.add(tf.layers.maxPooling2d({ poolSize: 2 }));
+    m.add(tf.layers.conv2d({ filters: 16, kernelSize: 3, padding: "same", activation: "relu" }));
+    m.add(tf.layers.maxPooling2d({ poolSize: 2 }));
+    m.add(tf.layers.flatten());
+    m.add(tf.layers.dropout({ rate: 0.25 }));
+    m.add(tf.layers.dense({ units: 24, activation: "relu" }));
+    m.add(tf.layers.dense({ units: 1, activation: "sigmoid" }));
+    m.compile({ optimizer: tf.train.adam(0.004), loss: "binaryCrossentropy", metrics: ["accuracy"] });
+
+    await m.fit(X, Y, {
+      epochs: 26, batchSize: 24, shuffle: true, validationSplit: 0.2,
+      callbacks: {
+        onEpochEnd: function (ep, logs) {
+          el("trainStat").textContent = "กำลังเทรน… รอบที่ " + (ep + 1) + "/26 · ความแม่นกับข้อมูลที่ไม่เคยเห็น " +
+            Math.round((logs.val_acc != null ? logs.val_acc : logs.acc) * 100) + "%";
+        }
+      }
+    });
+    var ev = m.evaluate(X, Y);
+    RIM.acc = (await ev[1].data())[0];
+    X.dispose(); Y.dispose(); ev[0].dispose(); ev[1].dispose();
+
+    RIM.model = m;
+    try { await m.save(MODEL_KEY); } catch (e) {}
+    el("bFindML").disabled = !stream;
+    el("trainStat").textContent = "เทรนเสร็จ · ความแม่น " + Math.round(RIM.acc * 100) + "% · เก็บโมเดลไว้ในเครื่องแล้ว กดปุ่ม “หาห่วงด้วยโมเดล” ได้เลย";
+    say("เทรนเสร็จแล้ว ลองกด “หาห่วงด้วยโมเดล” ดู");
+  } catch (err) {
+    el("trainStat").textContent = "เทรนไม่สำเร็จ: " + (err && err.message ? err.message : err);
+  }
+  RIM.training = false;
+  el("bTrain").disabled = false;
+};
+
+/* เลื่อนหน้าต่างไล่ทั้งภาพ หาจุดที่โมเดลมั่นใจที่สุดว่าเป็นห่วง */
+el("bFindML").onclick = async function () {
+  if (!RIM.model) { say("ยังไม่มีโมเดล — เก็บตัวอย่างแล้วกดเทรนก่อน"); return; }
+  say("กำลังให้โมเดลไล่หาห่วงทั้งภาพ…");
+  await new Promise(function (r) { setTimeout(r, 30); });
+  wctx.drawImage(video, 0, 0, WW, WH);
+
+  var widths = [WW * 0.14, WW * 0.20, WW * 0.28, WW * 0.38, WW * 0.50];
+  var cands = [], vecs = [];
+  for (var wi = 0; wi < widths.length; wi++) {
+    var bw = widths[wi], bh = bw * 0.42;
+    var step = Math.max(5, Math.round(bw * 0.16));
+    for (var y = 0; y < WH * 0.80 - bh; y += step) {
+      for (var x = 0; x <= WW - bw; x += step) {
+        var v = patchFrom(x, y, bw, bh);
+        if (!v) continue;
+        vecs.push(v); cands.push({ x: x, y: y, w: bw, h: bh });
+      }
+    }
+  }
+  if (!vecs.length) { say("หาไม่เจอ ลองเล็งใหม่"); return; }
+
+  var best = null;
+  try {
+    var N = vecs.length, buf = new Float32Array(N * PW * PH * PCH);
+    for (var i = 0; i < N; i++) buf.set(vecs[i], i * PW * PH * PCH);
+    var T = tf.tensor4d(buf, [N, PH, PW, PCH]);
+    var scores = await RIM.model.predict(T).data();
+    T.dispose();
+    for (var k = 0; k < N; k++) if (!best || scores[k] > best.s) best = { s: scores[k], c: cands[k] };
+  } catch (e) { say("โมเดลทำงานผิดพลาด: " + e.message); return; }
+
+  if (!best || best.s < 0.6) {
+    say("โมเดลยังไม่มั่นใจ (คะแนนสูงสุด " + Math.round((best ? best.s : 0) * 100) + "%) — เก็บตัวอย่างเพิ่มอีกสัก 3-5 รอบแล้วเทรนใหม่");
+    return;
+  }
+  /* แปลงกล่องที่ได้เป็นจุด L/R/F แล้วให้ตัวขยายขอบเดิมช่วยเก็บรายละเอียด */
+  var c = best.c;
+  var midY = c.y + c.h * 0.42, cxp = c.x + c.w / 2;
+  var refined = refineRimFromTap(cxp / WW, midY / WH);
+  rim = refined || {
+    L: { x: c.x / WW, y: midY / WH },
+    R: { x: (c.x + c.w) / WW, y: midY / WH },
+    F: { x: cxp / WW, y: (c.y + c.h * 0.92) / WH }
+  };
+  rebuildGeo(); saveRim();
+  say("โมเดลหาห่วงเจอแล้ว (มั่นใจ " + Math.round(best.s * 100) + "%) · เช็ควงรีให้ทับพอดี ถ้าเพี้ยนแตะที่ห่วงเพื่อแก้ได้");
+};
+
+el("bWipeML").onclick = async function () {
+  RIM.pos = []; RIM.neg = []; RIM.acc = null;
+  if (RIM.model) { try { RIM.model.dispose(); } catch (e) {} RIM.model = null; }
+  try { await tf.io.removeModel(MODEL_KEY); } catch (e) {}
+  el("bGrab").textContent = "เก็บตัวอย่าง (0)";
+  el("bTrain").disabled = true; el("bFindML").disabled = true;
+  el("trainStat").textContent = "ลบโมเดลและตัวอย่างทั้งหมดแล้ว";
+};
+
+async function loadRimModel() {
+  if (!window.tf) return;
+  try {
+    RIM.model = await tf.loadLayersModel(MODEL_KEY);
+    el("bFindML").disabled = !stream;
+    el("trainStat").textContent = "มีโมเดลที่เทรนไว้แล้วในเครื่อง — กด “หาห่วงด้วยโมเดล” ได้เลย";
+  } catch (e) { /* ยังไม่เคยเทรน */ }
+}
+
 /* ---------- เวอร์ชัน + ปุ่มบังคับอัปเดต ---------- */
-var APP_VERSION = "3.6";
+var APP_VERSION = "4.0";
 el("verLine").textContent = "เวอร์ชัน " + APP_VERSION + " · ถ้าปุ่มหรือหน้าตาไม่ตรงกับที่คุยกันไว้ แปลว่ามือถือยังใช้ของเก่าอยู่ ให้กดปุ่มด้านบนนี้";
 
 el("bManual").onclick = function () {
