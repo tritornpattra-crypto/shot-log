@@ -154,17 +154,20 @@
         <button id="bBeep">เสียงบี๊บ: เปิด</button>
       </div>
       <div class="row"><button id="bReset">ล้างค่าห่วง/ลูก</button></div>
+      <div class="row"><button id="bUpdate">ล้างแคช + โหลดแอปเวอร์ชันล่าสุด</button></div>
+      <p class="hint" id="verLine" style="margin-top:6px"></p>
     </div>
   </div>
 
   <div class="card">
-    <h2>ยืนยันผลรายลูก — แตะชิปเพื่อสลับ เข้า/พลาด</h2>
-    <div class="pair">
-      <button class="shoot in" id="bIn">+ เข้า</button>
-      <button class="shoot out" id="bOut">+ พลาด</button>
-    </div>
+    <h2>ผลรายลูก — ระบบนับให้เอง ไม่ต้องมากด</h2>
     <div class="row">
       <button id="bReview">ตรวจลูกที่ไม่ชัวร์</button>
+      <button id="bManual">บันทึกเอง</button>
+    </div>
+    <div class="pair" id="manualPair" style="display:none">
+      <button class="shoot in" id="bIn">+ เข้า</button>
+      <button class="shoot out" id="bOut">+ พลาด</button>
     </div>
     <div class="row">
       <button id="bUndo">ลบลูกล่าสุด</button>
@@ -256,50 +259,93 @@ function setAI(state, txt) {
   d.className = "dot" + (state === "ready" ? " ok" : state === "loading" ? " load" : state === "error" ? " err" : "");
   el("aiTxt").textContent = txt;
 }
-var TFJS_URL = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js";
-var COCO_URL = "https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js";
+/* มี CDN สำรอง เผื่อบางเครือข่ายเข้า jsdelivr ไม่ได้ */
+var TFJS_URLS = [
+  "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js",
+  "https://unpkg.com/@tensorflow/tfjs@4.22.0/dist/tf.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.22.0/tf.min.js"
+];
+var COCO_URLS = [
+  "https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js",
+  "https://unpkg.com/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"
+];
 
-/* เคยโหลดไฟล์ AI ไว้ในแคชแล้วหรือยัง */
 async function isAICached() {
   try {
     if (!window.caches) return false;
-    var c = await caches.open("shotlog-runtime-v1");
-    var hit = await c.match(TFJS_URL);
-    return !!hit;
+    var names = await caches.keys();
+    for (var i = 0; i < names.length; i++) {
+      var c = await caches.open(names[i]);
+      for (var j = 0; j < TFJS_URLS.length; j++) {
+        if (await c.match(TFJS_URLS[j])) return true;
+      }
+    }
+    return false;
   } catch (e) { return false; }
 }
 
-function loadScript(src) {
+function loadScript(src, ms) {
   return new Promise(function (res, rej) {
+    var done = false;
     var s = document.createElement("script");
     s.src = src; s.async = true;
-    s.onload = res; s.onerror = function () { rej(new Error("โหลดไม่ได้: " + src)); };
+    s.onload = function () { if (!done) { done = true; res(); } };
+    s.onerror = function () { if (!done) { done = true; rej(new Error("โหลดไฟล์ไม่ได้")); } };
     document.head.appendChild(s);
+    setTimeout(function () { if (!done) { done = true; rej(new Error("โหลดนานเกินไป (เน็ตช้าหรือถูกบล็อก)")); } }, ms || 45000);
   });
 }
+async function loadAny(list, label) {
+  var lastErr = null;
+  for (var i = 0; i < list.length; i++) {
+    try {
+      setAI("loading", label + " (แหล่งที่ " + (i + 1) + "/" + list.length + ")…");
+      await loadScript(list[i]);
+      return;
+    } catch (e) { lastErr = e; }
+  }
+  throw new Error(label + " ล้มเหลว: " + (lastErr ? lastErr.message : "ไม่ทราบสาเหตุ"));
+}
+
 async function initAI() {
   if (AI.state === "loading" || AI.state === "ready") return;
-  setAI("loading", "กำลังโหลด AI (~25MB ครั้งแรกครั้งเดียว)…");
   el("bAI").disabled = true;
+  var t0 = Date.now();
+  var tick = setInterval(function () {
+    if (AI.state === "loading") {
+      var s = Math.round((Date.now() - t0) / 1000);
+      el("aiTxt").textContent = el("aiTxt").textContent.replace(/ \[\d+ วิ\]$/, "") + " [" + s + " วิ]";
+    }
+  }, 1000);
   try {
-    if (!window.tf) await loadScript(TFJS_URL);
-    if (!window.cocoSsd) await loadScript(COCO_URL);
+    if (!navigator.onLine) throw new Error("มือถือไม่ได้ต่อเน็ต");
+    if (!window.tf) await loadAny(TFJS_URLS, "กำลังโหลดไลบรารี TensorFlow");
+    if (!window.tf) throw new Error("โหลดไลบรารีแล้วแต่ใช้งานไม่ได้");
+    if (!window.cocoSsd) await loadAny(COCO_URLS, "กำลังโหลดตัวตรวจจับวัตถุ");
+    if (!window.cocoSsd) throw new Error("โหลดตัวตรวจจับแล้วแต่ใช้งานไม่ได้");
+
+    setAI("loading", "กำลังตั้งค่าเครื่องคำนวณ…");
     try { await window.tf.setBackend("webgl"); } catch (e) {}
     await window.tf.ready();
+
+    setAI("loading", "กำลังดาวน์โหลดโมเดล ~25MB (ครั้งเดียวจบ)…");
     AI.model = await window.cocoSsd.load({ base: "lite_mobilenet_v2" });
+
+    clearInterval(tick);
     var cached = await isAICached();
-    setAI("ready", "AI พร้อม · " + window.tf.getBackend() + (cached ? " · เก็บไว้ใช้ออฟไลน์แล้ว" : ""));
-    el("bAI").textContent = "AI ทำงาน";
+    setAI("ready", "AI พร้อม · " + window.tf.getBackend() + (cached ? " · ใช้ออฟไลน์ได้แล้ว" : ""));
+    el("bAI").textContent = "AI ทำงานอยู่";
     el("bTestAI").disabled = !stream;
     if (geo) el("bRun").disabled = false;
-    say("AI พร้อมแล้ว — ไม่ต้องแตะลูกบอลก็ได้ ระบบจะหาลูกเอง");
+    say("AI พร้อมแล้ว — ระบบจะหาลูกบอลเอง");
   } catch (err) {
-    setAI("error", "โหลด AI ไม่ได้ (" + err.message + ") — ใช้ตัวจับสีแทนได้");
+    clearInterval(tick);
+    setAI("error", "โหลด AI ไม่สำเร็จ — " + err.message + " · กดลองใหม่ได้ หรือใช้ปุ่ม “แตะลูก” แทนก็ยังจับได้");
     el("bAI").disabled = false;
     el("bAI").textContent = "ลองใหม่";
   }
 }
-el("bAI").onclick = initAI;
+el("bAI").onclick = function () { initAI(); };
 
 /* เรียก AI แบบไม่บล็อกลูปวาดภาพ */
 async function runAI(now) {
@@ -1130,8 +1176,50 @@ function renderHist() {
   }).join("") : '<p class="empty">ยังไม่มีเซสชันที่บันทึกไว้</p>';
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
-setAI("off", "AI ตรวจจับลูกบอล — ยังไม่โหลด");
+/* ---------- เวอร์ชัน + ปุ่มบังคับอัปเดต ---------- */
+var APP_VERSION = "3.5";
+el("verLine").textContent = "เวอร์ชัน " + APP_VERSION + " · ถ้าปุ่มหรือหน้าตาไม่ตรงกับที่คุยกันไว้ แปลว่ามือถือยังใช้ของเก่าอยู่ ให้กดปุ่มด้านบนนี้";
+
+el("bManual").onclick = function () {
+  var p = el("manualPair");
+  var on = p.style.display === "none";
+  p.style.display = on ? "grid" : "none";
+  el("bManual").classList.toggle("done", on);
+  el("bManual").textContent = on ? "ซ่อนปุ่มบันทึกเอง" : "บันทึกเอง";
+};
+
+el("bUpdate").onclick = async function () {
+  el("bUpdate").textContent = "กำลังล้าง…";
+  try {
+    if (window.caches) {
+      var ks = await caches.keys();
+      /* เก็บแคชของ AI ไว้ จะได้ไม่ต้องโหลด 25MB ใหม่ */
+      for (var i = 0; i < ks.length; i++) if (ks[i].indexOf("runtime") === -1) await caches.delete(ks[i]);
+    }
+    if (navigator.serviceWorker) {
+      var regs = await navigator.serviceWorker.getRegistrations();
+      for (var j = 0; j < regs.length; j++) await regs[j].unregister();
+    }
+  } catch (e) {}
+  location.replace(location.pathname + "?u=" + Date.now());
+};
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").then(function (reg) {
+      reg.addEventListener("updatefound", function () {
+        var nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener("statechange", function () {
+          if (nw.state === "installed" && navigator.serviceWorker.controller) {
+            say("มีเวอร์ชันใหม่ของแอป — ปิดแล้วเปิดใหม่อีกครั้งเพื่อใช้ของใหม่");
+          }
+        });
+      });
+    }).catch(function () {});
+  });
+}
+setAI("off", "AI ตรวจจับลูกบอล — ยังไม่โหลด (กดปุ่มนี้ตอนต่อ Wi-Fi)");
 render(); renderHist();
 </script>
 </body>

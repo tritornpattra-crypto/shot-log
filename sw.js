@@ -3,7 +3,7 @@
    - แคชไฟล์ AI (TensorFlow.js + โมเดล COCO-SSD) แบบ runtime
      เพื่อให้โหลดครั้งแรกครั้งเดียว แล้วใช้ออฟไลน์ได้ที่สนาม            */
 
-const APP = "shotlog-app-v3";
+const APP = "shotlog-app-v5";
 const RUNTIME = "shotlog-runtime-v1";
 
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon.svg", "./icon.png"];
@@ -58,19 +58,24 @@ self.addEventListener("fetch", e => {
     return;
   }
 
-  /* ---- ไฟล์ของแอปเอง: ใช้แคชก่อน แล้วอัปเดตเบื้องหลัง ---- */
+  /* ---- ไฟล์ของแอปเอง: เอาของใหม่จากเน็ตก่อนเสมอ ----
+     เดิมใช้แคชก่อน ทำให้มือถือค้างอยู่กับเวอร์ชันเก่าแม้จะอัปเดตเว็บแล้ว
+     ตอนนี้ลองต่อเน็ตก่อน (รอไม่เกิน 3.5 วินาที) ถ้าไม่มีเน็ตค่อยใช้แคช
+     จึงยังเปิดใช้ที่สนามแบบออฟไลน์ได้เหมือนเดิม                        */
   if (url.origin !== self.location.origin) return;
 
-  e.respondWith(
-    caches.match(req).then(hit => {
-      const net = fetch(req).then(res => {
-        if (res && res.ok) {
-          const copy = res.clone();
-          caches.open(APP).then(c => c.put(req, copy));
-        }
-        return res;
-      }).catch(() => hit || caches.match("./index.html"));
-      return hit || net;
-    })
-  );
+  e.respondWith((async () => {
+    const cache = await caches.open(APP);
+    try {
+      const res = await Promise.race([
+        fetch(req, { cache: "no-store" }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 3500))
+      ]);
+      if (res && res.ok) cache.put(req, res.clone());
+      return res;
+    } catch (err) {
+      const hit = await cache.match(req);
+      return hit || (await cache.match("./index.html")) || Response.error();
+    }
+  })());
 });
