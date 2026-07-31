@@ -251,7 +251,9 @@ var AI = {
   lastBox: null,       // {x,y,r,score,t} พิกัดใน work
   lastRun: 0,
   hits: 0,
-  lastClass: ""
+  lastClass: "",
+  backend: "-",
+  fails: 0
 };
 function setAI(state, txt) {
   AI.state = state;
@@ -268,6 +270,12 @@ var TFJS_URLS = [
 var COCO_URLS = [
   "https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js",
   "https://unpkg.com/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"
+];
+/* ตัวคำนวณสำรอง สำหรับมือถือที่ WebGL คอมไพล์ shader ไม่ผ่าน */
+var WASM_BASE = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@4.22.0/dist/";
+var WASM_URLS = [
+  WASM_BASE + "tf-backend-wasm.js",
+  "https://unpkg.com/@tensorflow/tfjs-backend-wasm@4.22.0/dist/tf-backend-wasm.js"
 ];
 
 async function isAICached() {
@@ -307,6 +315,65 @@ async function loadAny(list, label) {
   throw new Error(label + " ล้มเหลว: " + (lastErr ? lastErr.message : "ไม่ทราบสาเหตุ"));
 }
 
+/* ธงพวกนี้ต้องตั้งก่อนเปิด backend — เป็นสาเหตุหลักของ
+   "failed to link vertex and fragment" บน GPU มือถือหลายรุ่น */
+function safeWebglFlags() {
+  var tf = window.tf; if (!tf || !tf.env) return;
+  var flags = {
+    WEBGL_PACK: false,                    /* ปิดการอัดหลายค่าใน 1 texel — ตัวการหลักของ shader พัง */
+    WEBGL_PACK_DEPTHWISECONV: false,
+    WEBGL_FORCE_F16_TEXTURES: false,
+    WEBGL_RENDER_FLOAT32_ENABLED: false,
+    WEBGL_CPU_FORWARD: true,
+    WEBGL_FLUSH_THRESHOLD: 1
+  };
+  for (var k in flags) { try { tf.env().set(k, flags[k]); } catch (e) {} }
+}
+
+/* ทดลองใช้จริงทันทีหลังโหลด ถ้า shader พังจะรู้ตรงนี้ ไม่ใช่ตอนกำลังยิงอยู่ */
+async function warmupAI() {
+  var c = document.createElement("canvas");
+  c.width = 160; c.height = 120;
+  var g = c.getContext("2d");
+  g.fillStyle = "#808080"; g.fillRect(0, 0, 160, 120);
+  g.fillStyle = "#c8660f"; g.beginPath(); g.arc(80, 60, 26, 0, Math.PI * 2); g.fill();
+  await AI.model.detect(c, 5, 0.2);
+  await AI.model.detect(c, 5, 0.2);
+}
+
+async function useBackend(name) {
+  var tf = window.tf;
+  if (name === "wasm" && !tf.findBackend("wasm")) {
+    await loadAny(WASM_URLS, "กำลังโหลดตัวคำนวณสำรอง WASM");
+    try { tf.wasm.setWasmPaths(WASM_BASE); } catch (e) {}
+  }
+  if (name === "webgl") safeWebglFlags();
+  await tf.setBackend(name);
+  await tf.ready();
+  if (tf.getBackend() !== name) throw new Error("เปิดตัวคำนวณ " + name + " ไม่ได้");
+}
+
+async function loadModelWithBackend() {
+  var order = ["webgl", "wasm", "cpu"], errs = [];
+  for (var i = 0; i < order.length; i++) {
+    var b = order[i];
+    try {
+      setAI("loading", "กำลังตั้งค่าตัวคำนวณ: " + b + "…");
+      await useBackend(b);
+      setAI("loading", "กำลังดาวน์โหลดโมเดล ~25MB (ครั้งเดียวจบ)…");
+      AI.model = await window.cocoSsd.load({ base: "lite_mobilenet_v2" });
+      setAI("loading", "กำลังทดสอบโมเดลกับตัวคำนวณ " + b + "…");
+      await warmupAI();
+      AI.backend = b;
+      return;
+    } catch (e) {
+      errs.push(b + " → " + (e && e.message ? e.message : e));
+      AI.model = null;
+    }
+  }
+  throw new Error("ลองครบทุกตัวคำนวณแล้วไม่ผ่าน · " + errs.join(" | "));
+}
+
 async function initAI() {
   if (AI.state === "loading" || AI.state === "ready") return;
   el("bAI").disabled = true;
@@ -324,16 +391,11 @@ async function initAI() {
     if (!window.cocoSsd) await loadAny(COCO_URLS, "กำลังโหลดตัวตรวจจับวัตถุ");
     if (!window.cocoSsd) throw new Error("โหลดตัวตรวจจับแล้วแต่ใช้งานไม่ได้");
 
-    setAI("loading", "กำลังตั้งค่าเครื่องคำนวณ…");
-    try { await window.tf.setBackend("webgl"); } catch (e) {}
-    await window.tf.ready();
-
-    setAI("loading", "กำลังดาวน์โหลดโมเดล ~25MB (ครั้งเดียวจบ)…");
-    AI.model = await window.cocoSsd.load({ base: "lite_mobilenet_v2" });
+    await loadModelWithBackend();
 
     clearInterval(tick);
     var cached = await isAICached();
-    setAI("ready", "AI พร้อม · " + window.tf.getBackend() + (cached ? " · ใช้ออฟไลน์ได้แล้ว" : ""));
+    setAI("ready", "AI พร้อม · ตัวคำนวณ " + AI.backend + (cached ? " · ใช้ออฟไลน์ได้แล้ว" : ""));
     el("bAI").textContent = "AI ทำงานอยู่";
     el("bTestAI").disabled = !stream;
     if (geo) el("bRun").disabled = false;
@@ -388,7 +450,32 @@ async function runAI(now) {
       AI.lastBox = best; AI.hits++;
       learnBallColor(best);                                    // ให้ตัวจับสีเรียนสีลูกจาก AI
     } else if (AI.lastBox && now - AI.lastBox.t > 700) AI.lastBox = null;
-  } catch (e) { /* ข้ามเฟรมที่พัง */ }
+    AI.fails = 0;
+  } catch (e) {
+    /* ถ้าตัวคำนวณพังกลางทาง (เช่น shader ล่มหลังใช้ไปสักพัก) ให้สลับไปตัวสำรองเอง
+       ไม่ต้องให้ผู้ใช้มานั่งแก้เอง และไม่ทำให้การซ้อมสะดุด */
+    AI.fails++;
+    if (AI.fails === 8) {
+      AI.busy = false;
+      setAI("loading", "ตัวคำนวณ " + AI.backend + " มีปัญหา — กำลังสลับไปตัวสำรอง…");
+      AI.state = "loading"; AI.model = null; AI.lastBox = null;
+      try {
+        var order = ["wasm", "cpu"], done = false;
+        for (var i = 0; i < order.length && !done; i++) {
+          if (order[i] === AI.backend) continue;
+          try {
+            await useBackend(order[i]);
+            AI.model = await window.cocoSsd.load({ base: "lite_mobilenet_v2" });
+            await warmupAI();
+            AI.backend = order[i]; done = true;
+          } catch (e2) {}
+        }
+        if (done) { AI.fails = 0; setAI("ready", "AI พร้อม · สลับมาใช้ตัวคำนวณ " + AI.backend + " แล้ว"); }
+        else setAI("error", "AI หยุดทำงาน — ใช้ตัวจับสีแทน (กด “แตะลูก” เพื่อสอนสีลูก)");
+      } catch (e3) { setAI("error", "AI หยุดทำงาน — ใช้ตัวจับสีแทน"); }
+      return;
+    }
+  }
   AI.busy = false;
 }
 
@@ -1067,7 +1154,7 @@ function loop() {
 
   el("live").textContent =
     (running ? "● จับอยู่" : "○ หยุด") + "  " + fps + "fps  " +
-    (AI.state === "ready" ? "AI ✓" : AI.state === "loading" ? "AI …" : "AI ✕") + "\n" +
+    (AI.state === "ready" ? "AI ✓ " + AI.backend : AI.state === "loading" ? "AI …" : "AI ✕") + "\n" +
     (found ? "เจอลูก [" + found.src + "] ขนาด " + Math.round(found.rRatio * 100) + "%" : "ไม่เจอลูก · จุดตรงสี " + matched) +
     (AI.state === "ready" ? "\nAI เห็นเป็น: " + (AI.lastClass || "—") : "");
 }
@@ -1177,7 +1264,7 @@ function renderHist() {
 }
 
 /* ---------- เวอร์ชัน + ปุ่มบังคับอัปเดต ---------- */
-var APP_VERSION = "3.5";
+var APP_VERSION = "3.6";
 el("verLine").textContent = "เวอร์ชัน " + APP_VERSION + " · ถ้าปุ่มหรือหน้าตาไม่ตรงกับที่คุยกันไว้ แปลว่ามือถือยังใช้ของเก่าอยู่ ให้กดปุ่มด้านบนนี้";
 
 el("bManual").onclick = function () {
