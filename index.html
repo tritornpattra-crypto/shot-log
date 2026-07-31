@@ -104,7 +104,10 @@
       <div class="tapmode" id="tapmode">กดเปิดกล้องเพื่อเริ่มตั้งค่า</div>
     </div>
 
-    <div class="row"><button id="bCam" class="pri">เปิดกล้อง</button></div>
+    <div class="row">
+      <button id="bCam" class="pri">เปิดกล้อง</button>
+      <button id="bFlip" disabled>สลับกล้อง</button>
+    </div>
 
     <div class="aibar">
       <span class="dot" id="aiDot"></span>
@@ -192,6 +195,7 @@ var rim = null, geo = null, ballRef = null;
 var prevGray = null, matched = 0;
 var track = [], phase = "idle", armed = null, lastEvent = 0;
 var shots = [], fps = 0, modalOpen = false;
+var camFacing = "environment", loopStarted = false;
 
 var cfg = { colTol: 55, motion: 18, minConf: 80, rTol: 34, net: 1 };
 try { var _c = JSON.parse(localStorage.getItem(CFGKEY) || "{}"); for (var k in _c) cfg[k] = _c[k]; } catch (e) {}
@@ -204,7 +208,9 @@ var clipBuf = [];
 
 function say(t) { el("tapmode").textContent = t; }
 function saveCfg() { try { localStorage.setItem(CFGKEY, JSON.stringify(cfg)); } catch (e) {} }
-function saveRim() { try { localStorage.setItem(RIMKEY, JSON.stringify({ rim: rim, ballRef: ballRef })); } catch (e) {} }
+function saveRim() {
+  try { localStorage.setItem(RIMKEY + "." + camFacing, JSON.stringify({ rim: rim, ballRef: ballRef })); } catch (e) {}
+}
 
 /* =========================================================
    ส่วนที่ 1 — AI (TensorFlow.js + COCO-SSD)
@@ -333,31 +339,63 @@ function learnBallColor(b) {
 /* =========================================================
    ส่วนที่ 2 — กล้อง + ตั้งค่าห่วง
    ========================================================= */
+/* ค่าห่วงถูกเก็บแยกตามกล้อง เพราะกล้องหน้ากับกล้องหลังเห็นภาพคนละมุมกันสิ้นเชิง */
+function rimKeyFor(f) { return RIMKEY + "." + f; }
+
+async function startCamera(facing) {
+  /* ปิดกล้องเดิมก่อน ไม่งั้นบางเครื่องจะเปิดอีกตัวไม่ได้ */
+  if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+  if (running) {
+    running = false;
+    el("bRun").textContent = "5 · เริ่มจับอัตโนมัติ";
+    el("bRun").classList.remove("on");
+    keepAwake(false);
+  }
+  track = []; phase = "idle"; armed = null; prevGray = null; clipBuf = []; AI.lastBox = null;
+  rim = null; geo = null; ballRef = null;
+  ["bL", "bR", "bF", "bBall"].forEach(function (id) { el(id).classList.remove("done"); });
+
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, frameRate: { ideal: 30 } },
+    audio: false
+  });
+  camFacing = facing;
+  video.srcObject = stream;
+  await video.play();
+
+  var vw = video.videoWidth || 640, vh = video.videoHeight || 480;
+  WH = Math.round(WW * vh / vw);
+  work.width = WW; work.height = WH;
+  clipCv.width = CLIP_W; clipCv.height = Math.round(CLIP_W * vh / vw);
+  ov.width = vw; ov.height = vh;
+
+  ["bL", "bR", "bF", "bBall"].forEach(function (id) { el(id).disabled = false; });
+  el("bCam").textContent = "กล้องเปิดแล้ว";
+  el("bCam").classList.remove("pri");
+  el("bFlip").textContent = facing === "environment" ? "กล้อง: หลัง ⇄" : "กล้อง: หน้า ⇄";
+
+  var s = null;
+  try { s = JSON.parse(localStorage.getItem(rimKeyFor(facing)) || "null"); } catch (e) {}
+  if (s && s.rim) {
+    rim = s.rim; ballRef = s.ballRef || null; rebuildGeo();
+    say("โหลดค่าห่วงของกล้อง" + (facing === "environment" ? "หลัง" : "หน้า") + "ครั้งก่อนมาแล้ว · เช็คว่าวงรีทับห่วงพอดีไหม ถ้าเพี้ยนให้ลากจุดเหลือง");
+  } else {
+    say("ขั้นที่ 1 · กด “ขอบห่วงซ้าย” แล้วแตะขอบซ้ายสุดของวงห่วงในภาพ");
+  }
+}
+
 el("bCam").onclick = async function () {
   if (stream) return;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, frameRate: { ideal: 30 } },
-      audio: false
-    });
-    video.srcObject = stream;
-    await video.play();
-    var vw = video.videoWidth || 640, vh = video.videoHeight || 480;
-    WH = Math.round(WW * vh / vw);
-    work.width = WW; work.height = WH;
-    clipCv.width = CLIP_W; clipCv.height = Math.round(CLIP_W * vh / vw);
-    ov.width = vw; ov.height = vh;
+    await startCamera(camFacing);
 
-    ["bL", "bR", "bF", "bBall"].forEach(function (id) { el(id).disabled = false; });
-    el("bCam").textContent = "กล้องเปิดแล้ว";
-    el("bCam").classList.remove("pri");
-
-    var s = null;
-    try { s = JSON.parse(localStorage.getItem(RIMKEY) || "null"); } catch (e) {}
-    if (s && s.rim) {
-      rim = s.rim; ballRef = s.ballRef || null; rebuildGeo();
-      say("โหลดค่าห่วงครั้งก่อนมาแล้ว · เช็คว่าวงรีทับห่วงพอดีไหม ถ้าเพี้ยนให้ลากจุดเหลือง");
-    } else say("ขั้นที่ 1 · กด “ขอบห่วงซ้าย” แล้วแตะขอบซ้ายสุดของวงห่วงในภาพ");
+    /* มีกล้องให้สลับหรือเปล่า */
+    try {
+      var devs = await navigator.mediaDevices.enumerateDevices();
+      var cams = devs.filter(function (d) { return d.kind === "videoinput"; });
+      el("bFlip").disabled = cams.length < 2;
+      if (cams.length < 2) el("bFlip").textContent = "มีกล้องตัวเดียว";
+    } catch (e) { el("bFlip").disabled = false; }
 
     /* โหลด AI ให้อัตโนมัติเฉพาะตอนที่เคยโหลดไว้แล้ว (อยู่ในแคช) จะได้ไม่กินเน็ตมือถือ
        ถ้ายังไม่เคยโหลด ให้ผู้ใช้กดปุ่ม “โหลด AI” เองตอนอยู่ Wi-Fi */
@@ -367,10 +405,23 @@ el("bCam").onclick = async function () {
         else setAI("off", "AI ยังไม่ได้โหลด — กดปุ่มนี้ตอนต่อ Wi-Fi (ครั้งเดียวจบ ~25MB)");
       });
     }
-    loop();
+    if (!loopStarted) { loopStarted = true; loop(); }
   } catch (err) {
     say("เปิดกล้องไม่ได้ (" + err.name + ") — ต้องเปิดผ่าน https และกดอนุญาตกล้อง");
   }
+};
+
+el("bFlip").onclick = async function () {
+  if (!stream) return;
+  var next = camFacing === "environment" ? "user" : "environment";
+  el("bFlip").disabled = true;
+  try {
+    await startCamera(next);
+  } catch (err) {
+    say("สลับกล้องไม่ได้ (" + err.name + ") — ลองใหม่อีกครั้ง");
+    try { await startCamera(camFacing); } catch (e2) {}
+  }
+  el("bFlip").disabled = false;
 };
 
 el("bL").onclick = function () { tapMode = "L"; say("แตะ “ขอบซ้ายสุด” ของวงห่วง (วงเหล็ก ไม่ใช่แป้น)"); };
@@ -450,7 +501,7 @@ el("bNet").onclick = function () { cfg.net = cfg.net ? 0 : 1; syncTune(); saveCf
 syncTune();
 el("bReset").onclick = function () {
   rim = null; geo = null; ballRef = null;
-  try { localStorage.removeItem(RIMKEY); } catch (e) {}
+  try { localStorage.removeItem(RIMKEY + "." + camFacing); } catch (e) {}
   ["bL", "bR", "bF", "bBall"].forEach(function (id) { el(id).classList.remove("done"); });
   el("bRun").disabled = true;
   say("ล้างแล้ว · เริ่มที่ขั้นที่ 1 ใหม่");
