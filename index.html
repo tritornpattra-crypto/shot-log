@@ -158,6 +158,8 @@
         <button id="bVoice">เสียงพูด: เปิด</button>
         <button id="bBeep">เสียงบี๊บ: เปิด</button>
       </div>
+      <div class="row"><button id="bFollow">ติดตามห่วงตลอด: เปิด</button></div>
+      <p class="hint" style="margin-top:6px">เปิดไว้ = ห่วงขยับตามภาพให้เอง มือถือสั่นหรือถูกชนนิดหน่อยก็ไม่ต้องตั้งใหม่ (ปรับเฉพาะตอนไม่มีลูกอยู่กลางอากาศ) · ปิดถ้าตั้งกล้องนิ่งมากแล้วอยากล็อกตำแหน่งตายตัว</p>
       <div class="row"><button id="bReset">ล้างค่าห่วง/ลูก</button></div>
       <div class="row"><button id="bUpdate">ล้างแคช + โหลดแอปเวอร์ชันล่าสุด</button></div>
       <p class="hint" id="verLine" style="margin-top:6px"></p>
@@ -247,7 +249,7 @@ var shots = [], fps = 0, modalOpen = false;
 var camFacing = "environment", loopStarted = false;
 
 /* net: 2 = ตาข่ายผ้า · 1 = โซ่ · 0 = ไม่มีตาข่าย */
-var cfg = { colTol: 55, motion: 18, minConf: 80, rTol: 34, net: 2, voice: 1, beep: 1 };
+var cfg = { colTol: 55, motion: 18, minConf: 80, rTol: 34, net: 2, voice: 1, beep: 1, follow: 1 };
 try { var _c = JSON.parse(localStorage.getItem(CFGKEY) || "{}"); for (var k in _c) cfg[k] = _c[k]; } catch (e) {}
 
 /* ---------- คลิปย้อนหลัง ---------- */
@@ -854,7 +856,10 @@ function syncTune() {
   el("bVoice").classList.toggle("done", !!cfg.voice);
   el("bBeep").textContent = "เสียงบี๊บ: " + (cfg.beep ? "เปิด" : "ปิด");
   el("bBeep").classList.toggle("done", !!cfg.beep);
+  el("bFollow").textContent = "ติดตามห่วงตลอด: " + (cfg.follow ? "เปิด" : "ปิด");
+  el("bFollow").classList.toggle("done", !!cfg.follow);
 }
+el("bFollow").onclick = function () { cfg.follow = cfg.follow ? 0 : 1; syncTune(); saveCfg(); };
 el("bNet").onclick = function () { cfg.net = (cfg.net + 2) % 3; syncTune(); saveCfg(); };
 el("bVoice").onclick = function () { cfg.voice = cfg.voice ? 0 : 1; syncTune(); saveCfg(); if (cfg.voice) speak("เข้า"); };
 el("bBeep").onclick = function () { cfg.beep = cfg.beep ? 0 : 1; syncTune(); saveCfg(); if (cfg.beep) { initAudio(); tone(760, 0, 0.13, 0.3); tone(1180, 0.11, 0.18, 0.3); } };
@@ -1003,13 +1008,29 @@ function judge(f, now) {
     if (phase === "cross" && armed) {
       if (armed.down >= 2) finish(true, Math.min(0.94, armed.conf * 0.95), armed.why + " · แล้วหายเข้าไปในตาข่าย");
       else finish(false, 0.5, "ลูกหายจากภาพตอนถึงห่วง");
-    } else if (phase === "approach" && lastP.y > geo.cy - geo.a && lastP.y < geo.cy + geo.a * 0.6) {
-      /* ลูกหายไปตรงห่วงพอดีก่อนที่กล้องจะทันเห็นตอนข้าม — เกิดบ่อยเมื่อตาข่ายบัง
-         หรือเฟรมตก ถ้าไม่ดักไว้ ลูกนี้จะไม่ถูกนับเลย ทำให้จำนวนลูกยิงผิด */
-      var offL = Math.abs(lastP.x - geo.cx);
-      var innerL = Math.max(geo.a * 0.12, geo.a - lastP.r * 0.9);
-      if (offL <= innerL) finish(true, 0.70, "ลูกหายไปตรงกลางห่วงพอดี — น่าจะลงตาข่าย");
-      else finish(false, 0.68, "ลูกหายไปตรงข้างห่วง");
+    } else if (phase === "approach" && track.length >= 2) {
+      /* ลูกหายไปก่อนที่กล้องจะทันเห็นตอนข้ามห่วง — เกิดบ่อยเมื่อตาข่ายบังหรือเฟรมตก
+         ถ้าปล่อยผ่าน ลูกนี้จะไม่ถูกนับเลย ทำให้จำนวนลูกยิงทั้งหมดผิด
+         จึงคำนวณเส้นทางต่อจากสองเฟรมสุดท้ายว่าน่าจะผ่านห่วงตรงไหน */
+      var p2 = track[track.length - 2], vy2 = lastP.y - p2.y;
+      var xAt = null, rAt = lastP.r;
+      if (vy2 > 0.3) {
+        var steps = (geo.cy - lastP.y) / vy2;
+        if (steps > -2 && steps < 14) {
+          xAt = lastP.x + (lastP.x - p2.x) * Math.max(0, steps);
+          rAt = Math.abs(lastP.r + (lastP.r - p2.r) * Math.max(0, steps));
+        }
+      } else if (lastP.y > geo.cy - geo.a && lastP.y < geo.cy + geo.a * 0.6) {
+        xAt = lastP.x;
+      }
+      if (xAt !== null) {
+        var offL = Math.abs(xAt - geo.cx);
+        if (offL <= geo.a * 2.2) {
+          var innerL = Math.max(geo.a * 0.12, geo.a - rAt * 0.9);
+          if (offL <= innerL) finish(true, 0.70, "ลูกหายจากภาพตรงห่วง — คำนวณเส้นทางแล้วน่าจะลงห่วง");
+          else finish(false, 0.68, "ลูกหายจากภาพ — คำนวณเส้นทางแล้วน่าจะไม่ลงห่วง");
+        }
+      }
     }
     track = []; phase = "idle"; armed = null;
     return;
@@ -1262,9 +1283,17 @@ function loop() {
 
   /* โหมดถ่ายเก็บตัวอย่างห่วง — ทำงานแทนการจับลูก */
   if (scanOn) {
-    if (now - scanT > 200) { scanT = now; scanStep(); }
+    if (now - scanT > 130) { scanT = now; scanStep(); }
     drawOverlay(null);
     return;
+  }
+
+  /* ติดตามห่วงระหว่างใช้งานจริง — ให้มือถือขยับได้บ้างโดยไม่ต้องตั้งใหม่
+     ทำเฉพาะตอนไม่มีลูกอยู่กลางอากาศ และปรับแบบค่อยเป็นค่อยไป กันตัดสินเพี้ยน */
+  if (cfg.follow && geo && !modalOpen && phase === "idle" && !armed &&
+      now - rimLock.t > 500 && now - lastEvent > 1200) {
+    rimLock.t = now;
+    trackRimStep(0.3);
   }
 
   if (running && !modalOpen) runAI(now);
@@ -1285,7 +1314,8 @@ function loop() {
 
   el("live").textContent =
     (running ? "● จับอยู่" : "○ หยุด") + "  " + fps + "fps  " +
-    (AI.state === "ready" ? "AI ✓ " + AI.backend : AI.state === "loading" ? "AI …" : "AI ✕") + "\n" +
+    (AI.state === "ready" ? "AI ✓ " + AI.backend : AI.state === "loading" ? "AI …" : "AI ✕") +
+    (cfg.follow && geo ? (rimLock.lost === 0 ? "  ห่วง●" : "  ห่วง○" + rimLock.lost) : "") + "\n" +
     (found ? "เจอลูก [" + found.src + "] ขนาด " + Math.round(found.rRatio * 100) + "%" : "ไม่เจอลูก · จุดตรงสี " + matched) +
     (AI.state === "ready" ? "\nAI เห็นเป็น: " + (AI.lastClass || "—") : "");
 }
@@ -1476,27 +1506,70 @@ el("bGrab").onclick = function () {
    ได้ตัวอย่างเป็นร้อยจากการแตะแค่ครั้งเดียว
    ========================================================= */
 var scanOn = false, scanT = 0, scanOk = 0, scanLost = 0;
+var rimLock = { ok: false, lost: 0, t: 0, vx: 0, vy: 0 };
+
+/* ผลลัพธ์ที่ได้สมเหตุผลกับห่วงที่ติดตามอยู่หรือเปล่า */
+function plausibleRim(r, tolSize, tolMove) {
+  if (!r) return false;
+  var nl = r.L.x * WW, nr = r.R.x * WW;
+  var na = Math.abs(nr - nl) / 2, ncx = (nl + nr) / 2, ncy = r.L.y * WH;
+  if (na < 6 || na > WW * 0.46) return false;
+  if (Math.abs(na - geo.a) / geo.a > (tolSize || 0.45)) return false;
+  if (Math.hypot(ncx - geo.cx, ncy - geo.cy) > geo.a * (tolMove || 1.3)) return false;
+  return true;
+}
+function blendRim(r, k) {
+  if (k >= 1) { rim = r; rebuildGeo(); return; }
+  ["L", "R", "F"].forEach(function (kk) {
+    if (!rim[kk] || !r[kk]) { rim[kk] = r[kk]; return; }
+    rim[kk] = { x: rim[kk].x * (1 - k) + r[kk].x * k, y: rim[kk].y * (1 - k) + r[kk].y * k };
+  });
+  rebuildGeo();
+}
+
+/* ติดตามห่วงต่อเนื่อง — เดาตำแหน่งถัดไปจากทิศที่กำลังเคลื่อน
+   ถ้าหลุดจะค่อยๆ ขยายวงค้นหารอบตำแหน่งเดิมเพื่อกลับมาล็อกใหม่เอง */
+function trackRimStep(k) {
+  if (!geo) return false;
+  var pcx = geo.cx, pcy = geo.cy;
+  /* จุดตั้งต้น: ตำแหน่งเดิม + ทิศที่กำลังไป */
+  var seeds = [[geo.cx + rimLock.vx, geo.cy + rimLock.vy], [geo.cx, geo.cy]];
+  if (rimLock.lost > 0) {
+    var sp = geo.a * (0.45 + Math.min(1.4, rimLock.lost * 0.22));
+    seeds.push([geo.cx - sp, geo.cy], [geo.cx + sp, geo.cy],
+               [geo.cx, geo.cy - sp * 0.6], [geo.cx, geo.cy + sp * 0.6],
+               [geo.cx - sp * 0.7, geo.cy - sp * 0.4], [geo.cx + sp * 0.7, geo.cy - sp * 0.4],
+               [geo.cx - sp * 0.7, geo.cy + sp * 0.4], [geo.cx + sp * 0.7, geo.cy + sp * 0.4]);
+  }
+  var relax = rimLock.lost > 2 ? 0.75 : 0.45;
+  var move = rimLock.lost > 2 ? 2.2 : 1.3;
+  for (var i = 0; i < seeds.length; i++) {
+    var sx = seeds[i][0] / WW, sy = seeds[i][1] / WH;
+    if (sx < 0.02 || sx > 0.98 || sy < 0.02 || sy > 0.98) continue;
+    var r = refineRimFromTap(sx, sy);
+    if (plausibleRim(r, relax, move)) {
+      blendRim(r, k);
+      rimLock.vx = (geo.cx - pcx) * 0.8 + rimLock.vx * 0.2;
+      rimLock.vy = (geo.cy - pcy) * 0.8 + rimLock.vy * 0.2;
+      rimLock.ok = true; rimLock.lost = 0;
+      return true;
+    }
+  }
+  rimLock.ok = false; rimLock.lost++;
+  rimLock.vx *= 0.5; rimLock.vy *= 0.5;
+  return false;
+}
 
 function scanStep() {
   if (!geo) return;
   wctx.drawImage(video, 0, 0, WW, WH);
-  var prevA = geo.a, prevCx = geo.cx, prevCy = geo.cy;
-  var r = refineRimFromTap(geo.cx / WW, geo.cy / WH);
-  var ok = false;
-  if (r) {
-    var nl = r.L.x * WW, nr = r.R.x * WW;
-    var na = Math.abs(nr - nl) / 2, ncx = (nl + nr) / 2, ncy = r.L.y * WH;
-    /* รับเฉพาะเมื่อขนาดและตำแหน่งเปลี่ยนแบบสมเหตุผล กันไปเกาะวัตถุอื่น */
-    if (na > 6 && Math.abs(na - prevA) / prevA < 0.45 &&
-        Math.hypot(ncx - prevCx, ncy - prevCy) < prevA * 1.3) {
-      rim = r; rebuildGeo(); ok = true;
-    }
-  }
-  if (ok) { collectSamples(14); scanOk++; }
+  var ok = trackRimStep(1);
+  if (ok) { collectSamples(14); scanOk++; saveRim(); }
   else scanLost++;
 
-  var rounds = grabStat("ติดตามได้ " + scanOk + " เฟรม · หลุด " + scanLost);
-  el("live").textContent = "โหมดถ่ายเก็บตัวอย่าง\nได้ " + scanOk + " เฟรม" + (ok ? " · ล็อกห่วงอยู่" : " · หาห่วงไม่เจอ ชะลอการขยับ");
+  grabStat("ติดตามได้ " + scanOk + " เฟรม · หลุด " + scanLost);
+  el("live").textContent = "โหมดถ่ายเก็บตัวอย่าง\nได้ " + scanOk + " / 120 เฟรม\n" +
+    (ok ? "● ล็อกห่วงอยู่" : "○ หลุด " + rimLock.lost + " ครั้ง — ขยับช้าลง ให้ห่วงอยู่กลางภาพ");
   if (scanOk >= 120) toggleScan();
 }
 
@@ -1635,7 +1708,7 @@ async function loadRimModel() {
 }
 
 /* ---------- เวอร์ชัน + ปุ่มบังคับอัปเดต ---------- */
-var APP_VERSION = "4.0";
+var APP_VERSION = "4.1";
 el("verLine").textContent = "เวอร์ชัน " + APP_VERSION + " · ถ้าปุ่มหรือหน้าตาไม่ตรงกับที่คุยกันไว้ แปลว่ามือถือยังใช้ของเก่าอยู่ ให้กดปุ่มด้านบนนี้";
 
 el("bManual").onclick = function () {
